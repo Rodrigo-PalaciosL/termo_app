@@ -15,20 +15,34 @@ class PropiedadSobrecalentada {
   });
 
   factory PropiedadSobrecalentada.fromMap(Map<String, dynamic> map) {
+    final tValue = map['T'];
+    final vValue = map['v'];
+    final uValue = map['u'];
+    final hValue = map['h'];
+    final sValue = map['s'];
+
+    if (tValue is! num ||
+        vValue is! num ||
+        uValue is! num ||
+        hValue is! num ||
+        sValue is! num) {
+      throw const FormatException('Propiedad sobrecalentada incompleta');
+    }
+
     return PropiedadSobrecalentada(
-      t: (map['T'] as num).toDouble(),
-      v: (map['v'] as num).toDouble(),
-      u: (map['u'] as num).toDouble(),
-      h: (map['h'] as num).toDouble(),
-      s: (map['s'] as num).toDouble(),
+      t: tValue.toDouble(),
+      v: vValue.toDouble(),
+      u: uValue.toDouble(),
+      h: hValue.toDouble(),
+      s: sValue.toDouble(),
     );
   }
 }
 
 // Representa un bloque completo de presión (Ej: Bloque de P = 10.0 kPa)
 class BloquePresionSobrecalentado {
-  final double p;       // Presión del bloque (kPa)
-  final double tSat;    // Temperatura de saturación a esa presión (°C)
+  final double p; // Presión del bloque (kPa)
+  final double tSat; // Temperatura de saturación a esa presión (°C)
   final List<PropiedadSobrecalentada> propiedadesPorT;
 
   BloquePresionSobrecalentado({
@@ -38,14 +52,36 @@ class BloquePresionSobrecalentado {
   });
 
   factory BloquePresionSobrecalentado.fromMap(Map<String, dynamic> map) {
-    var listaT = map['propiedades_por_T'] as List;
-    List<PropiedadSobrecalentada> listaPropiedades = listaT
-        .map((item) => PropiedadSobrecalentada.fromMap(item as Map<String, dynamic>))
-        .toList();
+    final pValue = map['P'];
+    final tSatValue = map['T_sat'];
+    final listaT = map['propiedades_por_T'];
+
+    if (pValue is! num || tSatValue is! num || listaT is! List) {
+      throw const FormatException('Bloque sobrecalentado incompleto');
+    }
+
+    final listaPropiedades = <PropiedadSobrecalentada>[];
+    for (final item in listaT) {
+      if (item is! Map) continue;
+      try {
+        final prop = PropiedadSobrecalentada.fromMap(
+          Map<String, dynamic>.from(item),
+        );
+        listaPropiedades.add(prop);
+      } catch (_) {
+        // Se omiten propiedades incompletas.
+      }
+    }
+
+    if (listaPropiedades.isEmpty) {
+      throw const FormatException(
+        'Bloque sobrecalentado sin propiedades válidas',
+      );
+    }
 
     return BloquePresionSobrecalentado(
-      p: (map['P'] as num).toDouble(),
-      tSat: (map['T_sat'] as num).toDouble(),
+      p: pValue.toDouble(),
+      tSat: tSatValue.toDouble(),
       propiedadesPorT: listaPropiedades,
     );
   }

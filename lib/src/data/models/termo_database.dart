@@ -20,9 +20,18 @@ class TermoDatabase {
         .map((e) => PuntoSaturacion.fromMap(e as Map<String, dynamic>))
         .toList();
 
-    final sobreParsed = jsonSobrecalentado
-        .map((e) => BloquePresionSobrecalentado.fromMap(e as Map<String, dynamic>))
-        .toList();
+    final sobreParsed = <BloquePresionSobrecalentado>[];
+    for (final item in jsonSobrecalentado) {
+      if (item is! Map) continue;
+      try {
+        final bloque = BloquePresionSobrecalentado.fromMap(
+          Map<String, dynamic>.from(item),
+        );
+        sobreParsed.add(bloque);
+      } catch (_) {
+        // Se omiten bloques incompletos del JSON.
+      }
+    }
 
     return TermoDatabase(
       tablaSaturacion: satParsed,
