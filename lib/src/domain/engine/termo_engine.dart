@@ -1,4 +1,3 @@
-// import 'dart:math';
 import '../../data/models/saturacion_model.dart';
 import '../../data/models/sobrecalentado_model.dart';
 import '../../data/models/termo_database.dart';
@@ -30,6 +29,8 @@ class EstadoTermodinamico {
 
 class TermoEngine {
   final TermoDatabase db;
+  // Tolerancia para comparaciones de punto flotante
+  static const double _epsilon = 1e-7;
 
   TermoEngine({required this.db});
 
@@ -38,15 +39,14 @@ class TermoEngine {
   // ====================================================================
 
   /// Ejecuta la fórmula matemática de interpolación lineal simple.
-  /// Retorna el valor Y correspondiente a un valor X de entrada, dado un rango [x1, x2] y [y1, y2].
   double _interpolarLineal(
-    double xUser,
-    double x1,
-    double x2,
-    double y1,
-    double y2,
-  ) {
-    if ((x1 - x2).abs() < 1e-12) return y1; // Prevención de división por cero
+      double xUser,
+      double x1,
+      double x2,
+      double y1,
+      double y2,
+      ) {
+    if ((x1 - x2).abs() < 1e-14) return y1; 
     double factor = (xUser - x1) / (x2 - x1);
     return y1 + factor * (y2 - y1);
   }
@@ -60,36 +60,32 @@ class TermoEngine {
   // ====================================================================
 
   /// Busca una temperatura específica en la tabla de saturación.
-  /// Si no existe exacta, interpola todas las propiedades del renglón.
   PuntoSaturacion _buscarPropiedadesSaturacionPorT(double tUser) {
     final tabla = db.tablaSaturacion;
 
-    // Validación de límites: Fuera de rango (Sólido/Hielo o Régimen Supercrítico)
-    if (tUser < tabla.first.t) {
-      throw Exception("Temperatura por debajo del punto triple.");
+    if (tUser < tabla.first.t - _epsilon) {
+      throw Exception("Temperatura por debajo del límite de las tablas.");
     }
-    if (tUser > tabla.last.t) {
-      throw Exception("Temperatura en la zona hipercrítica (mayor a T_crit).");
+    if (tUser > tabla.last.t + _epsilon) {
+      throw Exception("Temperatura por encima del límite (Punto Crítico).");
     }
 
-    // Búsqueda exacta
+    // Búsqueda exacta con tolerancia
     for (var punto in tabla) {
-      if (_sonIguales(punto.t, tUser)) return punto;
+      if (_sonIguales(punto.t, tUser, epsilon: _epsilon)) return punto;
     }
 
-    // Si no es exacta, buscamos los límites para interpolar
     PuntoSaturacion? p1;
     PuntoSaturacion? p2;
 
     for (int i = 0; i < tabla.length - 1; i++) {
-      if (tabla[i].t < tUser && tabla[i + 1].t > tUser) {
+      if (tabla[i].t <= tUser && tabla[i + 1].t >= tUser) {
         p1 = tabla[i];
         p2 = tabla[i + 1];
         break;
       }
     }
 
-    // Interpolamos el renglón completo de propiedades para esa T_user
     return PuntoSaturacion(
       t: tUser,
       pSat: _interpolarLineal(tUser, p1!.t, p2!.t, p1.pSat, p2.pSat),
@@ -105,26 +101,23 @@ class TermoEngine {
   }
 
   /// Busca una presión específica en la tabla de saturación.
-  /// Si no existe exacta, interpola todas las propiedades del renglón.
   PuntoSaturacion _buscarPropiedadesSaturacionPorP(double pUser) {
     final tabla = db.tablaSaturacion;
 
-    if (pUser < tabla.first.pSat) {
-      throw Exception("Presión por debajo del punto triple.");
+    if (pUser < tabla.first.pSat - _epsilon) {
+      throw Exception("Presión por debajo del límite de las tablas.");
     }
-    if (pUser > tabla.last.pSat) {
-      throw Exception("Presión hipercrítica. Fuera de tabla de saturación.");
+    if (pUser > tabla.last.pSat + _epsilon) {
+      throw Exception("Presión por encima del límite (Punto Crítico).");
     }
 
-    // Búsqueda exacta
     for (var punto in tabla) {
-      if (_sonIguales(punto.pSat, pUser)) return punto;
+      if (_sonIguales(punto.pSat, pUser, epsilon: _epsilon)) return punto;
     }
 
-    // Interpolación de la fila completa si la presión cae en el medio
     PuntoSaturacion? p1, p2;
     for (int i = 0; i < tabla.length - 1; i++) {
-      if (tabla[i].pSat < pUser && tabla[i + 1].pSat > pUser) {
+      if (tabla[i].pSat <= pUser && tabla[i + 1].pSat >= pUser) {
         p1 = tabla[i];
         p2 = tabla[i + 1];
         break;
@@ -149,11 +142,9 @@ class TermoEngine {
   EstadoTermodinamico _resolverSobrecalentadoPyT(double pUser, double tUser) {
     BloquePresionSobrecalentado? b1, b2;
 
-    // 1. Encontrar los bloques de presión que encierran a P_user
     for (int i = 0; i < db.tablaSobrecalentado.length - 1; i++) {
-      if (db.tablaSobrecalentado[i].p == pUser) {
-        b1 = db.tablaSobrecalentado[i];
-        b2 = b1; // Es exacta, no hay necesidad de cruzar presiones
+      if (_sonIguales(db.tablaSobrecalentado[i].p, pUser, epsilon: _epsilon)) {
+        b1 = b2 = db.tablaSobrecalentado[i];
         break;
       }
       if (db.tablaSobrecalentado[i].p < pUser &&
@@ -163,75 +154,60 @@ class TermoEngine {
         break;
       }
     }
-
-    if (b1 == null || b2 == null) {
-      throw Exception(
-        "La presión ingresada está fuera de las tablas de sobrecalentado.",
-      );
+    
+    // Verificación final del último elemento
+    if (b1 == null && _sonIguales(db.tablaSobrecalentado.last.p, pUser, epsilon: _epsilon)) {
+      b1 = b2 = db.tablaSobrecalentado.last;
     }
 
-    // 2. Obtener Estados Virtuales a la Temperatura del usuario en ambos bloques
+    if (b1 == null || b2 == null) {
+      throw Exception("Propiedades de sobrecalentado no disponibles para esta presión.");
+    }
+
     var prop1 = _obtenerPropiedadesEnBloquePorT(b1, tUser);
     var prop2 = (b1 == b2) ? prop1 : _obtenerPropiedadesEnBloquePorT(b2, tUser);
-
-    // 3. Interpolación Cruzada Final (Usando la presión como X)
-    double vFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.v, prop2.v);
-    double uFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.u, prop2.u);
-    double hFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.h, prop2.h);
-    double sFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.s, prop2.s);
 
     return EstadoTermodinamico(
       fase: "Vapor Sobrecalentado",
       p: pUser,
       t: tUser,
-      v: vFinal,
-      u: uFinal,
-      h: hFinal,
-      s: sFinal,
+      v: _interpolarLineal(pUser, b1.p, b2.p, prop1.v, prop2.v),
+      u: _interpolarLineal(pUser, b1.p, b2.p, prop1.u, prop2.u),
+      h: _interpolarLineal(pUser, b1.p, b2.p, prop1.h, prop2.h),
+      s: _interpolarLineal(pUser, b1.p, b2.p, prop1.s, prop2.s),
     );
   }
 
   /// Busca propiedades a una Temperatura específica dentro de un bloque de presión constante.
-  /// Si la T no es exacta, interpola linealmente entre las filas del bloque.
   PropiedadSobrecalentada _obtenerPropiedadesEnBloquePorT(
-    BloquePresionSobrecalentado bloque,
-    double tUser,
-  ) {
+      BloquePresionSobrecalentado bloque,
+      double tUser,
+      ) {
     final props = bloque.propiedadesPorT;
 
-    // Validación de límites para el bloque
-    if (tUser < bloque.tSat) {
-      throw Exception(
-        "Temperatura por debajo de Tsat (${bloque.tSat}°C) para la presión de ${bloque.p} kPa.",
-      );
+    if (tUser < bloque.tSat - _epsilon) {
+      throw Exception("A ${bloque.p} kPa, la temperatura $tUser°C está en zona de saturación.");
     }
-    if (tUser > props.last.t) {
-      throw Exception(
-        "Temperatura fuera del rango superior del bloque de ${bloque.p} kPa.",
-      );
+    if (tUser > props.last.t + _epsilon) {
+      throw Exception("Temperatura fuera del rango superior ($tUser > ${props.last.t}).");
     }
 
-    // Búsqueda exacta
     for (var p in props) {
-      if (p.t == tUser) return p;
+      if (_sonIguales(p.t, tUser, epsilon: _epsilon)) return p;
     }
 
-    // Interpolación si cae entre dos filas
     for (int i = 0; i < props.length - 1; i++) {
-      if (props[i].t < tUser && props[i + 1].t > tUser) {
-        var p1 = props[i];
-        var p2 = props[i + 1];
-
+      if (props[i].t <= tUser && props[i + 1].t >= tUser) {
         return PropiedadSobrecalentada(
           t: tUser,
-          v: _interpolarLineal(tUser, p1.t, p2.t, p1.v, p2.v),
-          u: _interpolarLineal(tUser, p1.t, p2.t, p1.u, p2.u),
-          h: _interpolarLineal(tUser, p1.t, p2.t, p1.h, p2.h),
-          s: _interpolarLineal(tUser, p1.t, p2.t, p1.s, p2.s),
+          v: _interpolarLineal(tUser, props[i].t, props[i + 1].t, props[i].v, props[i + 1].v),
+          u: _interpolarLineal(tUser, props[i].t, props[i + 1].t, props[i].u, props[i + 1].u),
+          h: _interpolarLineal(tUser, props[i].t, props[i + 1].t, props[i].h, props[i + 1].h),
+          s: _interpolarLineal(tUser, props[i].t, props[i + 1].t, props[i].s, props[i + 1].s),
         );
       }
     }
-    throw Exception("Error de algoritmo al interpolar temperatura en bloque.");
+    throw Exception("Error de interpolación de temperatura.");
   }
 
   /// Resuelve la interpolación doble para la zona de vapor sobrecalentado dado T y v.
@@ -239,68 +215,54 @@ class TermoEngine {
     BloquePresionSobrecalentado? b1, b2;
     PropiedadSobrecalentada? prop1, prop2;
 
-    // Recorremos los bloques de presión buscando dónde se encierra el volumen
     for (int i = 0; i < db.tablaSobrecalentado.length - 1; i++) {
-      var bloqueActual = db.tablaSobrecalentado[i];
-      var bloqueSiguiente = db.tablaSobrecalentado[i + 1];
+      var bloqueA = db.tablaSobrecalentado[i];
+      var bloqueB = db.tablaSobrecalentado[i + 1];
 
-      // Si la temperatura ingresada es menor a la de saturación de estos bloques,
-      // significa que a esa presión el gas ya se habría condensado. Saltamos.
-      if (tUser < bloqueActual.tSat || tUser < bloqueSiguiente.tSat) continue;
+      // Si la T es menor a Tsat en ambos, este intervalo no nos sirve
+      if (tUser < bloqueA.tSat - _epsilon && tUser < bloqueB.tSat - _epsilon) continue;
 
-      // Obtenemos los "Estados Virtuales" a T_user para ambas presiones
-      var pVirtual1 = _obtenerPropiedadesEnBloquePorT(bloqueActual, tUser);
-      var pVirtual2 = _obtenerPropiedadesEnBloquePorT(bloqueSiguiente, tUser);
+      // Obtener propiedades virtuales. Si la T es menor a Tsat del bloque, usamos vapor saturado del bloque.
+      PropiedadSobrecalentada pV1;
+      if (tUser < bloqueA.tSat - _epsilon) {
+          // Si T_user < T_sat del bloque, a esa presión NO es sobrecalentado.
+          // Pero para interpolar, necesitamos saber dónde termina el sobrecalentado (línea de saturación).
+          // Sin embargo, si tUser es menor a Tsat de AMBOS bloques, el punto no es sobrecalentado.
+          continue; 
+      } else {
+          pV1 = _obtenerPropiedadesEnBloquePorT(bloqueA, tUser);
+      }
 
-      // Como P aumenta, el volumen disminuye. El vUser debe estar en medio.
-      if (vUser <= pVirtual1.v && vUser >= pVirtual2.v) {
-        b1 = bloqueActual;
-        b2 = bloqueSiguiente;
-        prop1 = pVirtual1;
-        prop2 = pVirtual2;
-        break;
+      PropiedadSobrecalentada pV2;
+      double p2Coord = bloqueB.p;
+      if (tUser < bloqueB.tSat - _epsilon) {
+          // El bloque B está "dentro" de la campana para esta T. 
+          // Usamos el punto de vapor saturado (vg) a tUser como límite derecho de la interpolación.
+          PuntoSaturacion satAtT = _buscarPropiedadesSaturacionPorT(tUser);
+          pV2 = PropiedadSobrecalentada(t: tUser, v: satAtT.vg, u: satAtT.ug, h: satAtT.hg, s: satAtT.sg);
+          p2Coord = satAtT.pSat;
+      } else {
+          pV2 = _obtenerPropiedadesEnBloquePorT(bloqueB, tUser);
+      }
+
+      // vUser debe estar entre pV1.v y pV2.v (v disminuye al aumentar P)
+      if (vUser <= pV1.v + _epsilon && vUser >= pV2.v - _epsilon) {
+        b1 = bloqueA;
+        prop1 = pV1;
+        prop2 = pV2;
+        // La presión b2 es p2Coord (que podría ser pSat o la P del bloque)
+        return EstadoTermodinamico(
+          fase: "Vapor Sobrecalentado",
+          p: _interpolarLineal(vUser, prop1.v, prop2.v, b1.p, p2Coord),
+          t: tUser, v: vUser,
+          u: _interpolarLineal(vUser, prop1.v, prop2.v, prop1.u, prop2.u),
+          h: _interpolarLineal(vUser, prop1.v, prop2.v, prop1.h, prop2.h),
+          s: _interpolarLineal(vUser, prop1.v, prop2.v, prop1.s, prop2.s),
+        );
       }
     }
 
-    if (b1 == null || b2 == null) {
-      throw Exception(
-        "El volumen ingresado está fuera de las tablas de sobrecalentado disponibles.",
-      );
-    }
-
-    // INTERPOLACIÓN CRUZADA FINAL (Usando el volumen como el valor X conocido)
-    double pFinal = _interpolarLineal(vUser, prop1!.v, prop2!.v, b1.p, b2.p);
-    double uFinal = _interpolarLineal(
-      vUser,
-      prop1.v,
-      prop2.v,
-      prop1.u,
-      prop2.u,
-    );
-    double hFinal = _interpolarLineal(
-      vUser,
-      prop1.v,
-      prop2.v,
-      prop1.h,
-      prop2.h,
-    );
-    double sFinal = _interpolarLineal(
-      vUser,
-      prop1.v,
-      prop2.v,
-      prop1.s,
-      prop2.s,
-    );
-
-    return EstadoTermodinamico(
-      fase: "Vapor Sobrecalentado",
-      p: pFinal,
-      t: tUser,
-      v: vUser,
-      u: uFinal,
-      h: hFinal,
-      s: sFinal,
-    );
+    throw Exception("El volumen ingresado está fuera de los límites de sobrecalentado.");
   }
 
   // ====================================================================
@@ -309,42 +271,23 @@ class TermoEngine {
 
   /// Módulo de entrada principal: Temperatura y Volumen Específico (Caso T-v)
   EstadoTermodinamico resolverEstadoPorTyV(double tUser, double vUser) {
-    // 1. Ubicación en Tabla de Saturación
     PuntoSaturacion limitesSat = _buscarPropiedadesSaturacionPorT(tUser);
 
-    // 2. Filtro de Comparación de Regiones (Como definimos en la Lógica)
-    if (vUser < limitesSat.vf) {
-      // ESTADO: LÍQUIDO COMPRIMIDO
-      // Aplicamos la aproximación de ingeniería: v, u, h, s dependen casi 100% de T (usamos valores 'f')
+    if (vUser < limitesSat.vf - _epsilon) {
+      // ESTADO: LÍQUIDO COMPRIMIDO (Aproximación saturada a T_user)
       return EstadoTermodinamico(
-        fase: "Líquido Comprimido",
-        p: limitesSat
-            .pSat, // La presión es al menos la de saturación (para fines de la vista gráfica)
-        t: tUser,
-        v: limitesSat.vf,
-        u: limitesSat.uf,
-        h: limitesSat.hf,
-        s: limitesSat.sf,
+        fase: "Líquido Comprimido", p: limitesSat.pSat, t: tUser,
+        v: limitesSat.vf, u: limitesSat.uf, h: limitesSat.hf, s: limitesSat.sf,
       );
-    } else if (vUser >= limitesSat.vf && vUser <= limitesSat.vg) {
+    } else if (vUser <= limitesSat.vg + _epsilon) {
       // ESTADO: MEZCLA HÚMEDA
-      // Calculamos la calidad 'x'
       double x = (vUser - limitesSat.vf) / (limitesSat.vg - limitesSat.vf);
-
-      // Calculamos propiedades finales en mezcla: Y_final = Y_f + x * (Y_g - Y_f)
-      double uFinal = limitesSat.uf + x * (limitesSat.ug - limitesSat.uf);
-      double hFinal = limitesSat.hf + x * (limitesSat.hg - limitesSat.hf);
-      double sFinal = limitesSat.sf + x * (limitesSat.sg - limitesSat.sf);
-
+      if (x < 0) x = 0; if (x > 1) x = 1;
       return EstadoTermodinamico(
-        fase: "Mezcla Húmeda",
-        p: limitesSat.pSat,
-        t: tUser,
-        v: vUser,
-        u: uFinal,
-        h: hFinal,
-        s: sFinal,
-        x: x,
+        fase: "Mezcla Húmeda", p: limitesSat.pSat, t: tUser, v: vUser, x: x,
+        u: limitesSat.uf + x * (limitesSat.ug - limitesSat.uf),
+        h: limitesSat.hf + x * (limitesSat.hg - limitesSat.hf),
+        s: limitesSat.sf + x * (limitesSat.sg - limitesSat.sf),
       );
     } else {
       // ESTADO: VAPOR SOBRECALENTADO
@@ -354,38 +297,23 @@ class TermoEngine {
 
   /// Módulo de entrada principal: Presión y Volumen específico (Caso P-v)
   EstadoTermodinamico resolverEstadoPorPv(double pUser, double vUser) {
-    // 1. Obtener límites de saturación a esta Presión
     PuntoSaturacion limitesSat = _buscarPropiedadesSaturacionPorP(pUser);
 
-    // 2. Filtro de Regiones
-    if (vUser < limitesSat.vf) {
-      // ESTADO: LÍQUIDO COMPRIMIDO
+    if (vUser < limitesSat.vf - _epsilon) {
+      // ESTADO: LÍQUIDO COMPRIMIDO (Aproximación saturada a P_user)
       return EstadoTermodinamico(
-        fase: "Líquido Comprimido",
-        p: pUser,
-        t: limitesSat.t, // Aproximación grosera si no hay tablas de liq. comp.
-        v: limitesSat.vf,
-        u: limitesSat.uf,
-        h: limitesSat.hf,
-        s: limitesSat.sf,
+        fase: "Líquido Comprimido", p: pUser, t: limitesSat.t,
+        v: limitesSat.vf, u: limitesSat.uf, h: limitesSat.hf, s: limitesSat.sf,
       );
-    } else if (vUser >= limitesSat.vf && vUser <= limitesSat.vg) {
+    } else if (vUser <= limitesSat.vg + _epsilon) {
       // ESTADO: MEZCLA HÚMEDA
       double x = (vUser - limitesSat.vf) / (limitesSat.vg - limitesSat.vf);
-
-      double uFinal = limitesSat.uf + x * (limitesSat.ug - limitesSat.uf);
-      double hFinal = limitesSat.hf + x * (limitesSat.hg - limitesSat.hf);
-      double sFinal = limitesSat.sf + x * (limitesSat.sg - limitesSat.sf);
-
+      if (x < 0) x = 0; if (x > 1) x = 1;
       return EstadoTermodinamico(
-        fase: "Mezcla Húmeda",
-        p: pUser,
-        t: limitesSat.t,
-        v: vUser,
-        u: uFinal,
-        h: hFinal,
-        s: sFinal,
-        x: x,
+        fase: "Mezcla Húmeda", p: pUser, t: limitesSat.t, v: vUser, x: x,
+        u: limitesSat.uf + x * (limitesSat.ug - limitesSat.uf),
+        h: limitesSat.hf + x * (limitesSat.hg - limitesSat.hf),
+        s: limitesSat.sf + x * (limitesSat.sg - limitesSat.sf),
       );
     } else {
       // ESTADO: VAPOR SOBRECALENTADO
@@ -398,125 +326,95 @@ class TermoEngine {
     BloquePresionSobrecalentado? b1, b2;
 
     for (int i = 0; i < db.tablaSobrecalentado.length - 1; i++) {
-      if (db.tablaSobrecalentado[i].p == pUser) {
-        b1 = db.tablaSobrecalentado[i];
-        b2 = b1;
+      if (_sonIguales(db.tablaSobrecalentado[i].p, pUser, epsilon: _epsilon)) {
+        b1 = b2 = db.tablaSobrecalentado[i];
         break;
       }
-      if (db.tablaSobrecalentado[i].p < pUser &&
-          db.tablaSobrecalentado[i + 1].p > pUser) {
+      if (db.tablaSobrecalentado[i].p < pUser && db.tablaSobrecalentado[i + 1].p > pUser) {
         b1 = db.tablaSobrecalentado[i];
         b2 = db.tablaSobrecalentado[i + 1];
         break;
       }
     }
-
-    if (b1 == null || b2 == null) {
-      throw Exception("Presión fuera de rango en tablas de sobrecalentado.");
+    
+    if (b1 == null && _sonIguales(db.tablaSobrecalentado.last.p, pUser, epsilon: _epsilon)) {
+      b1 = b2 = db.tablaSobrecalentado.last;
     }
+
+    if (b1 == null || b2 == null) throw Exception("Presión fuera de rango.");
 
     var prop1 = _obtenerPropiedadesEnBloquePorV(b1, vUser);
     var prop2 = (b1 == b2) ? prop1 : _obtenerPropiedadesEnBloquePorV(b2, vUser);
 
-    // Interpolación cruzada por Presión
-    double tFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.t, prop2.t);
-    double uFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.u, prop2.u);
-    double hFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.h, prop2.h);
-    double sFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.s, prop2.s);
-
     return EstadoTermodinamico(
-      fase: "Vapor Sobrecalentado",
-      p: pUser,
-      t: tFinal,
+      fase: "Vapor Sobrecalentado", p: pUser,
+      t: _interpolarLineal(pUser, b1.p, b2.p, prop1.t, prop2.t),
       v: vUser,
-      u: uFinal,
-      h: hFinal,
-      s: sFinal,
+      u: _interpolarLineal(pUser, b1.p, b2.p, prop1.u, prop2.u),
+      h: _interpolarLineal(pUser, b1.p, b2.p, prop1.h, prop2.h),
+      s: _interpolarLineal(pUser, b1.p, b2.p, prop1.s, prop2.s),
     );
   }
 
   /// Busca propiedades a un Volumen específico dentro de un bloque de presión constante.
   PropiedadSobrecalentada _obtenerPropiedadesEnBloquePorV(
-    BloquePresionSobrecalentado bloque,
-    double vUser,
-  ) {
+      BloquePresionSobrecalentado bloque,
+      double vUser,
+      ) {
     final props = bloque.propiedadesPorT;
 
-    if (vUser < props.first.v) {
-      throw Exception(
-        "Volumen por debajo del vapor saturado para la presión de ${bloque.p} kPa.",
-      );
+    if (vUser > props.last.v + _epsilon) {
+      throw Exception("Volumen fuera del rango superior del bloque.");
     }
-    if (vUser > props.last.v) {
-      throw Exception(
-        "Volumen fuera del rango superior en bloque de ${bloque.p} kPa.",
-      );
+    
+    // Si vUser es menor al primer v del bloque (vapor saturado), usamos ese como límite
+    if (vUser < props.first.v - _epsilon) {
+        PuntoSaturacion sat = _buscarPropiedadesSaturacionPorP(bloque.p);
+        return PropiedadSobrecalentada(t: bloque.tSat, v: sat.vg, u: sat.ug, h: sat.hg, s: sat.sg);
     }
 
-    for (var p in props) {
-      if (_sonIguales(p.v, vUser)) return p;
-    }
+    for (var p in props) if (_sonIguales(p.v, vUser, epsilon: _epsilon)) return p;
 
     for (int i = 0; i < props.length - 1; i++) {
-      if (props[i].v < vUser && props[i + 1].v > vUser) {
-        var p1 = props[i];
-        var p2 = props[i + 1];
-
-        return PropiedadSobrecalentada(
-          t: _interpolarLineal(vUser, p1.v, p2.v, p1.t, p2.t),
-          v: vUser,
-          u: _interpolarLineal(vUser, p1.v, p2.v, p1.u, p2.u),
-          h: _interpolarLineal(vUser, p1.v, p2.v, p1.h, p2.h),
-          s: _interpolarLineal(vUser, p1.v, p2.v, p1.s, p2.s),
-        );
+      if (props[i].v >= vUser && props[i + 1].v <= vUser) { // v disminuye al aumentar T en sobrecalentado? No, v aumenta al aumentar T a P constante.
+        // ERROR LOGICO: A P constante, el volumen AUMENTA con la Temperatura.
+        // Corregimos la comparación:
       }
     }
-    throw Exception("Error de algoritmo al interpolar volumen en bloque.");
+    
+    // Re-escritura correcta de búsqueda por volumen a P constante:
+    for (int i = 0; i < props.length - 1; i++) {
+        if (props[i].v <= vUser && props[i+1].v >= vUser) {
+            return PropiedadSobrecalentada(
+                t: _interpolarLineal(vUser, props[i].v, props[i+1].v, props[i].t, props[i+1].t),
+                v: vUser,
+                u: _interpolarLineal(vUser, props[i].v, props[i+1].v, props[i].u, props[i+1].u),
+                h: _interpolarLineal(vUser, props[i].v, props[i+1].v, props[i].h, props[i+1].h),
+                s: _interpolarLineal(vUser, props[i].v, props[i+1].v, props[i].s, props[i+1].s),
+            );
+        }
+    }
+    
+    throw Exception("Error de interpolación de volumen.");
   }
 
   /// Módulo de entrada principal: Presión y Temperatura (Caso P-T)
   EstadoTermodinamico resolverEstadoPorPyT(double pUser, double tUser) {
-    // 1. Obtener la Temperatura de Saturación a esta Presión
     PuntoSaturacion limitesSat = _buscarPropiedadesSaturacionPorP(pUser);
+    const double tolerancia = 0.01; // Tolerancia en °C
 
-    // Tolerancia para evitar errores de precisión de punto flotante en Dart
-    const double tolerancia = 0.0001;
-
-    // 2. Buscar el bloque de sobrecalentado que corresponde a la presión ingresada
-    BloquePresionSobrecalentado? bloqueCorrespondiente;
-    for (final bloque in db.tablaSobrecalentado) {
-      if (_sonIguales(bloque.p, pUser)) {
-        bloqueCorrespondiente = bloque;
-        break;
-      }
-    }
-
-    final double tSatReal = bloqueCorrespondiente?.tSat ?? limitesSat.t;
-
-    // 3. Filtro de Regiones
-    if (tUser < (tSatReal - tolerancia)) {
+    if (tUser < (limitesSat.t - tolerancia)) {
       // ESTADO: LÍQUIDO COMPRIMIDO
-      // Como acordamos, la aproximación se hace evaluando el líquido saturado a T_user
       PuntoSaturacion propsLiquido = _buscarPropiedadesSaturacionPorT(tUser);
-
       return EstadoTermodinamico(
-        fase: "Líquido Comprimido",
-        p: pUser,
-        t: tUser,
-        v: propsLiquido.vf,
-        u: propsLiquido.uf,
-        h: propsLiquido.hf,
-        s: propsLiquido.sf,
+        fase: "Líquido Comprimido", p: pUser, t: tUser,
+        v: propsLiquido.vf, u: propsLiquido.uf, h: propsLiquido.hf, s: propsLiquido.sf,
       );
-    } else if (tUser > (tSatReal + tolerancia)) {
+    } else if (tUser > (limitesSat.t + tolerancia)) {
       // ESTADO: VAPOR SOBRECALENTADO
       return _resolverSobrecalentadoPyT(pUser, tUser);
     } else {
-      // ESTADO: INDETERMINADO (Saturación)
-      throw Exception(
-        "Estado Indeterminado: A $pUser kPa, la sustancia hierve exactamente a ${tSatReal}°C. "
-        "Para definir sus propiedades dentro de la mezcla húmeda, ingresa la Presión con otra variable (v, u, h, s, o calidad x).",
-      );
+      throw Exception("Estado Indeterminado (Saturación). Ingrese calidad (x) o volumen (v).");
     }
   }
 }

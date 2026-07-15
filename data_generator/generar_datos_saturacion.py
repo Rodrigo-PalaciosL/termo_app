@@ -1,6 +1,17 @@
 import os
 import json
 import numpy as np
+
+try:
+    import CoolProp.CoolProp as CP  # type: ignore
+except ImportError:
+    try:
+        import CoolProp as CP  # type: ignore
+    except ImportError as e:
+        raise ImportError(
+            "CoolProp no está instalado o no está accesible en el intérprete actual. "
+            "Instálelo con 'pip install CoolProp' y ejecútelo con el mismo Python."
+        ) from e
 import CoolProp.CoolProp as CP
 
 # 1. Configuración de rutas automatizadas para el repositorio
@@ -13,7 +24,7 @@ if not os.path.exists(assets_dir):
 output_path = os.path.join(assets_dir, 'agua_saturacion.json')
 
 # 2. Definición de la sustancia
-fluid = 'Water'
+fluid = 'Ammonia'
 
 # Obtenemos las constantes críticas usando variables de estado estables (esto no falla)
 # Evaluamos la temperatura crítica del fluido pidiéndole a CoolProp su valor directo
@@ -25,9 +36,9 @@ T_crit_c = T_crit_k - 273.15
 P_crit_kpa = P_crit_pa / 1000.0
 v_crit_m3kg = 1.0 / rho_crit_mass
 
-# Rango de temperaturas en Celsius para la tabla (de 0°C a 360°C de 5 en 5)
-# Filtramos para que no intente calcular por encima de la temperatura crítica
-temperaturas_celsius = np.arange(0, 365, 5)
+# Rango de temperaturas en Celsius para la tabla (de -75°C a 130°C de 5 en 5)
+# El amoníaco tiene su punto triple cerca de -77.7°C y crítica en ~132.4°C
+temperaturas_celsius = np.arange(-75, 135, 5)
 
 tabla_saturacion = []
 
@@ -75,7 +86,7 @@ for T_c in temperaturas_celsius:
 
 # 3. Estructura del JSON compatible con la App (Flutter)
 estructura_json = {
-    "sustancia": "Agua",
+    "sustancia": "Amoníaco",
     "puntos_criticos": {
         "Tcrit": float(round(T_crit_c, 4)),
         "Pcrit": float(round(P_crit_kpa, 4)),
