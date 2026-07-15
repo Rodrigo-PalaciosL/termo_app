@@ -352,6 +352,128 @@ class TermoEngine {
     }
   }
 
+  /// Módulo de entrada principal: Presión y Volumen específico (Caso P-v)
+  EstadoTermodinamico resolverEstadoPorPv(double pUser, double vUser) {
+    // 1. Obtener límites de saturación a esta Presión
+    PuntoSaturacion limitesSat = _buscarPropiedadesSaturacionPorP(pUser);
+
+    // 2. Filtro de Regiones
+    if (vUser < limitesSat.vf) {
+      // ESTADO: LÍQUIDO COMPRIMIDO
+      return EstadoTermodinamico(
+        fase: "Líquido Comprimido",
+        p: pUser,
+        t: limitesSat.t, // Aproximación grosera si no hay tablas de liq. comp.
+        v: limitesSat.vf,
+        u: limitesSat.uf,
+        h: limitesSat.hf,
+        s: limitesSat.sf,
+      );
+    } else if (vUser >= limitesSat.vf && vUser <= limitesSat.vg) {
+      // ESTADO: MEZCLA HÚMEDA
+      double x = (vUser - limitesSat.vf) / (limitesSat.vg - limitesSat.vf);
+
+      double uFinal = limitesSat.uf + x * (limitesSat.ug - limitesSat.uf);
+      double hFinal = limitesSat.hf + x * (limitesSat.hg - limitesSat.hf);
+      double sFinal = limitesSat.sf + x * (limitesSat.sg - limitesSat.sf);
+
+      return EstadoTermodinamico(
+        fase: "Mezcla Húmeda",
+        p: pUser,
+        t: limitesSat.t,
+        v: vUser,
+        u: uFinal,
+        h: hFinal,
+        s: sFinal,
+        x: x,
+      );
+    } else {
+      // ESTADO: VAPOR SOBRECALENTADO
+      return _resolverSobrecalentadoPv(pUser, vUser);
+    }
+  }
+
+  /// Resuelve la interpolación doble para vapor sobrecalentado dado P y v.
+  EstadoTermodinamico _resolverSobrecalentadoPv(double pUser, double vUser) {
+    BloquePresionSobrecalentado? b1, b2;
+
+    for (int i = 0; i < db.tablaSobrecalentado.length - 1; i++) {
+      if (db.tablaSobrecalentado[i].p == pUser) {
+        b1 = db.tablaSobrecalentado[i];
+        b2 = b1;
+        break;
+      }
+      if (db.tablaSobrecalentado[i].p < pUser &&
+          db.tablaSobrecalentado[i + 1].p > pUser) {
+        b1 = db.tablaSobrecalentado[i];
+        b2 = db.tablaSobrecalentado[i + 1];
+        break;
+      }
+    }
+
+    if (b1 == null || b2 == null) {
+      throw Exception("Presión fuera de rango en tablas de sobrecalentado.");
+    }
+
+    var prop1 = _obtenerPropiedadesEnBloquePorV(b1, vUser);
+    var prop2 = (b1 == b2) ? prop1 : _obtenerPropiedadesEnBloquePorV(b2, vUser);
+
+    // Interpolación cruzada por Presión
+    double tFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.t, prop2.t);
+    double uFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.u, prop2.u);
+    double hFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.h, prop2.h);
+    double sFinal = _interpolarLineal(pUser, b1.p, b2.p, prop1.s, prop2.s);
+
+    return EstadoTermodinamico(
+      fase: "Vapor Sobrecalentado",
+      p: pUser,
+      t: tFinal,
+      v: vUser,
+      u: uFinal,
+      h: hFinal,
+      s: sFinal,
+    );
+  }
+
+  /// Busca propiedades a un Volumen específico dentro de un bloque de presión constante.
+  PropiedadSobrecalentada _obtenerPropiedadesEnBloquePorV(
+    BloquePresionSobrecalentado bloque,
+    double vUser,
+  ) {
+    final props = bloque.propiedadesPorT;
+
+    if (vUser < props.first.v) {
+      throw Exception(
+        "Volumen por debajo del vapor saturado para la presión de ${bloque.p} kPa.",
+      );
+    }
+    if (vUser > props.last.v) {
+      throw Exception(
+        "Volumen fuera del rango superior en bloque de ${bloque.p} kPa.",
+      );
+    }
+
+    for (var p in props) {
+      if (_sonIguales(p.v, vUser)) return p;
+    }
+
+    for (int i = 0; i < props.length - 1; i++) {
+      if (props[i].v < vUser && props[i + 1].v > vUser) {
+        var p1 = props[i];
+        var p2 = props[i + 1];
+
+        return PropiedadSobrecalentada(
+          t: _interpolarLineal(vUser, p1.v, p2.v, p1.t, p2.t),
+          v: vUser,
+          u: _interpolarLineal(vUser, p1.v, p2.v, p1.u, p2.u),
+          h: _interpolarLineal(vUser, p1.v, p2.v, p1.h, p2.h),
+          s: _interpolarLineal(vUser, p1.v, p2.v, p1.s, p2.s),
+        );
+      }
+    }
+    throw Exception("Error de algoritmo al interpolar volumen en bloque.");
+  }
+
   /// Módulo de entrada principal: Presión y Temperatura (Caso P-T)
   EstadoTermodinamico resolverEstadoPorPyT(double pUser, double tUser) {
     // 1. Obtener la Temperatura de Saturación a esta Presión
