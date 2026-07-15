@@ -6,7 +6,7 @@
                                             │
                                             ▼
                        [ CARGAR ARCHIVO DE CONFIGURACIÓN (JSON) ]
-                       - Carga datos del gas de referencia (Agua)
+                       - Carga datos del gas de referencia (Amoniaco)
                        - Guarda en memoria: P_critica, T_critica, v_critico
                        - Carga matrices: tabla_saturacion y tabla_sobrecalentado
                                             │

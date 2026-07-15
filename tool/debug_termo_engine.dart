@@ -5,8 +5,8 @@ import 'package:termo_app/src/data/models/termo_database.dart';
 import 'package:termo_app/src/domain/engine/termo_engine.dart';
 
 void main() {
-  final satFile = File('assets/agua_saturacion.json');
-  final overFile = File('assets/agua_sobrecalentado.json');
+  final satFile = File('assets/amoniaco_saturacion.json');
+  final overFile = File('assets/amoniaco_sobrecalentado.json');
   final satJson =
       jsonDecode(satFile.readAsStringSync()) as Map<String, dynamic>;
   final overJson = jsonDecode(overFile.readAsStringSync()) as List<dynamic>;

@@ -89,5 +89,5 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
   assets:
-    - assets/agua_saturacion.json # (http://_vscodecontentref_/5)
-    - assets/agua_sobrecalentado.json #(http://_vscodecontentref_/6)
+    - assets/amoniaco_saturacion.json
+    - assets/amoniaco_sobrecalentado.json

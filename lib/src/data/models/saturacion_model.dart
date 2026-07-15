@@ -23,7 +23,7 @@ class PuntoSaturacion {
     required this.sg,
   });
 
-  // Constructor Factory para transformar el formato JSON/Map de agua_saturacion.txt
+  // Constructor Factory para transformar el formato JSON/Map de amoniaco_saturacion.json
   factory PuntoSaturacion.fromMap(Map<String, dynamic> map) {
     return PuntoSaturacion(
       t: (map['T'] as num).toDouble(),

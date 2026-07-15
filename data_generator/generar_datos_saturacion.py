@@ -21,7 +21,7 @@ assets_dir = os.path.abspath(os.path.join(script_dir, '..', 'assets'))
 if not os.path.exists(assets_dir):
     os.makedirs(assets_dir)
 
-output_path = os.path.join(assets_dir, 'agua_saturacion.json')
+output_path = os.path.join(assets_dir, 'amoniaco_saturacion.json')
 
 # 2. Definición de la sustancia
 fluid = 'Ammonia'
