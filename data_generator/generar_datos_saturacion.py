@@ -25,20 +25,34 @@ output_path = os.path.join(assets_dir, 'amoniaco_saturacion.json')
 
 # 2. Definición de la sustancia
 fluid = 'Ammonia'
+# Establecer referencia igual a EES (IIR es el estándar para Amoníaco en EES)
+CP.set_reference_state(fluid, 'IIR')
 
 # Obtenemos las constantes críticas usando variables de estado estables (esto no falla)
 # Evaluamos la temperatura crítica del fluido pidiéndole a CoolProp su valor directo
-T_crit_k = CP.PropsSI('T_critical', 'P', 0, 'T', 0, fluid) 
 P_crit_pa = CP.PropsSI('Pcrit', 'P', 0, 'T', 0, fluid)
 rho_crit_mass = CP.PropsSI('rhocrit', 'P', 0, 'T', 0, fluid)
 
-T_crit_c = T_crit_k - 273.15
 P_crit_kpa = P_crit_pa / 1000.0
 v_crit_m3kg = 1.0 / rho_crit_mass
 
-# Rango de temperaturas en Celsius para la tabla (de -75°C a 130°C de 5 en 5)
-# El amoníaco tiene su punto triple cerca de -77.7°C y crítica en ~132.4°C
-temperaturas_celsius = np.arange(-75, 135, 5)
+
+# Límites físicos de referencia para el Amoníaco
+T_triple_c = -77.7   # Punto triple (°C)
+T_crit_c = 132.25    # Punto crítico (°C)
+
+# --- AJUSTE DE PARÁMETROS DE EXTRACCIÓN ---
+# Nos alejamos sutilmente de los límites físicos para evitar fallos en CoolProp
+T_min_extrac = -75.0  # Límite inferior seguro
+T_max_extrac = 130.0  # Límite superior seguro (subcrítico)
+paso_temperatura = 2.0  # Resolución del barrido en °C (ajustable)
+
+# Generación del vector de temperaturas a evaluar
+temperaturas_celsius = np.arange(T_min_extrac, T_max_extrac + paso_temperatura, paso_temperatura)
+
+# Opcional: Asegurar que el límite superior exacto no cause desbordamiento
+temperaturas_celsius = temperaturas_celsius[temperaturas_celsius < T_crit_c - 0.5]
+# =====================================================================
 
 tabla_saturacion = []
 
