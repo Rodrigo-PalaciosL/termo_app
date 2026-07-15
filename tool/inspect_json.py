@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-p = Path(r'd:\RODRIGO\termo_app\assets\agua_sobrecalentado.json')
+p = Path(r'd:\RODRIGO\termo_app\assets\amoniaco_sobrecalentado.json')
 data = json.loads(p.read_text(encoding='utf-8'))
 print(type(data).__name__, len(data))
 for idx, item in enumerate(data):

@@ -53,9 +53,9 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _loadDatabase() async {
     try {
       final String satData =
-          await rootBundle.loadString('assets/agua_saturacion.json');
+          await rootBundle.loadString('assets/amoniaco_saturacion.json');
       final String sobreData =
-          await rootBundle.loadString('assets/agua_sobrecalentado.json');
+          await rootBundle.loadString('assets/amoniaco_sobrecalentado.json');
 
       final Map<String, dynamic> satJson = jsonDecode(satData);
       final List<dynamic> sobreJson = jsonDecode(sobreData);

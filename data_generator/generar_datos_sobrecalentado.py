@@ -20,7 +20,7 @@ assets_dir = os.path.abspath(os.path.join(script_dir, '..', 'assets'))
 if not os.path.exists(assets_dir):
     os.makedirs(assets_dir)
 
-output_path = os.path.join(assets_dir, 'agua_sobrecalentado.json')
+output_path = os.path.join(assets_dir, 'amoniaco_sobrecalentado.json')
 
 # 1. Lista de presiones para Amoníaco (en kPa)
 # Adaptado para rangos comunes de Amoníaco

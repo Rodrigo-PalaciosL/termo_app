@@ -11,9 +11,9 @@ void main() {
   late TermoEngine engine;
 
   setUp(() async {
-    final satRaw = await rootBundle.loadString('assets/agua_saturacion.json');
+    final satRaw = await rootBundle.loadString('assets/amoniaco_saturacion.json');
     final overRaw = await rootBundle.loadString(
-      'assets/agua_sobrecalentado.json',
+      'assets/amoniaco_sobrecalentado.json',
     );
 
     final satJson = jsonDecode(satRaw) as Map<String, dynamic>;
