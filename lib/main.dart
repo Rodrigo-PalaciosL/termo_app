@@ -56,13 +56,17 @@ class _MainScreenState extends State<MainScreen> {
           await rootBundle.loadString('assets/amoniaco_saturacion.json');
       final String sobreData =
           await rootBundle.loadString('assets/amoniaco_sobrecalentado.json');
+      final String liqData =
+          await rootBundle.loadString('assets/amoniaco_liquido.json');
 
       final Map<String, dynamic> satJson = jsonDecode(satData);
       final List<dynamic> sobreJson = jsonDecode(sobreData);
+      final List<dynamic> liqJson = jsonDecode(liqData);
 
       final db = TermoDatabase.fromRawData(
         jsonSaturacion: satJson['tabla_saturacion'] as List<dynamic>,
         jsonSobrecalentado: sobreJson,
+        jsonLiquido: liqJson,
       );
 
       setState(() {
