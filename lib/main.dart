@@ -12,10 +12,11 @@ void main() {
 class TermoApp extends StatelessWidget {
   const TermoApp({super.key});
 
-  @override
+  @override //Ejecutor clave
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Termo App',
+      debugShowCheckedModeBanner: false, //Oculta el banner de debug
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
