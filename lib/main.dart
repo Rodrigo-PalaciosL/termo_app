@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'src/data/models/termo_database.dart';
 import 'src/domain/engine/termo_engine.dart';
+import 'src/utils/unit_converter.dart';
 
 void main() {
   runApp(const TermoApp());
@@ -45,6 +46,10 @@ class _MainScreenState extends State<MainScreen> {
   String _selectedMode = 'T-v'; // Modos: 'T-v', 'P-T', 'P-v', 'T-x', 'P-x'
   EstadoTermodinamico? _resultado;
 
+  // Unidades seleccionadas
+  String _u1 = '°C'; // Para T o P
+  String _u2 = 'm³/kg'; // Para v, T o x
+
   @override
   void initState() {
     super.initState();
@@ -85,8 +90,8 @@ class _MainScreenState extends State<MainScreen> {
   void _calcular() {
     if (_engine == null) return;
 
-    final double? v1 = double.tryParse(_val1Controller.text);
-    final double? v2 = double.tryParse(_val2Controller.text);
+    double? v1 = double.tryParse(_val1Controller.text);
+    double? v2 = double.tryParse(_val2Controller.text);
 
     if (v1 == null || v2 == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,6 +99,22 @@ class _MainScreenState extends State<MainScreen> {
       );
       return;
     }
+
+    // --- CONVERSIÓN DE ENTRADA ---
+    // Convertir v1
+    if (_selectedMode.startsWith('T')) {
+      v1 = UnitConverter.toCelsius(v1, _u1);
+    } else if (_selectedMode.startsWith('P')) {
+      v1 = UnitConverter.toKpa(v1, _u1);
+    }
+
+    // Convertir v2
+    if (_selectedMode.endsWith('v')) {
+      v2 = UnitConverter.toM3kg(v2, _u2);
+    } else if (_selectedMode.endsWith('T')) {
+      v2 = UnitConverter.toCelsius(v2, _u2);
+    }
+    // Si es 'x', no hay conversión (se asume 0-1)
 
     try {
       EstadoTermodinamico res;
@@ -187,6 +208,20 @@ class _MainScreenState extends State<MainScreen> {
                       setState(() {
                         _selectedMode = value!;
                         _resultado = null;
+                        // Ajustar unidades por defecto según el modo
+                        if (_selectedMode.startsWith('T')) {
+                          _u1 = '°C';
+                        } else {
+                          _u1 = 'kPa';
+                        }
+
+                        if (_selectedMode.endsWith('v')) {
+                          _u2 = 'm³/kg';
+                        } else if (_selectedMode.endsWith('T')) {
+                          _u2 = '°C';
+                        } else {
+                          _u2 = 'x'; // Calidad no tiene unidad SI diferente usualmente
+                        }
                       });
                     },
                   ),
@@ -199,30 +234,57 @@ class _MainScreenState extends State<MainScreen> {
             Row(
               children: [
                 Expanded(
+                  flex: 3,
                   child: TextField(
                     controller: _val1Controller,
                     decoration: InputDecoration(
-                      labelText: (_selectedMode == 'T-v' || _selectedMode == 'T-x')
-                          ? 'T (°C)'
-                          : 'P (kPa)',
+                      labelText: (_selectedMode.startsWith('T')) ? 'T' : 'P',
                       border: const OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 Expanded(
+                  flex: 2,
+                  child: _buildUnitDropdown(
+                    value: _u1,
+                    items: _selectedMode.startsWith('T')
+                        ? ['°C', 'K']
+                        : ['kPa', 'Pa', 'MPa', 'bar'],
+                    onChanged: (val) => setState(() => _u1 = val!),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
                   child: TextField(
                     controller: _val2Controller,
                     decoration: InputDecoration(
-                      labelText: (_selectedMode == 'T-v' || _selectedMode == 'P-v')
-                          ? 'v (m³/kg)'
-                          : (_selectedMode == 'P-T' ? 'T (°C)' : 'x (0 - 1)'),
+                      labelText: (_selectedMode.endsWith('v'))
+                          ? 'v'
+                          : (_selectedMode.endsWith('T') ? 'T' : 'x (0 - 1)'),
                       border: const OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
                   ),
                 ),
+                const SizedBox(width: 8),
+                if (!_selectedMode.endsWith('x'))
+                  Expanded(
+                    flex: 2,
+                    child: _buildUnitDropdown(
+                      value: _u2,
+                      items: _selectedMode.endsWith('v')
+                          ? ['m³/kg', 'cm³/g', 'L/kg']
+                          : ['°C', 'K'],
+                      onChanged: (val) => setState(() => _u2 = val!),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
@@ -306,6 +368,30 @@ class _MainScreenState extends State<MainScreen> {
           Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
           Text(value, style: const TextStyle(fontFamily: 'monospace')),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUnitDropdown({
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
+          onChanged: onChanged,
+          isExpanded: true,
+        ),
       ),
     );
   }
