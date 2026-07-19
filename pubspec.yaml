@@ -46,10 +46,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
+  flutter_launcher_icons: ^0.13.1
 
-# The following section is specific to Flutter packages.
+
 flutter:
 
   # The following line ensures that the Material Icons font is
@@ -92,3 +91,10 @@ flutter:
     - assets/amoniaco_saturacion.json
     - assets/amoniaco_sobrecalentado.json
     - assets/amoniaco_liquido.json
+    - assets/logo.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo.png" # <--- Asegúrate de que tu logo esté en esta ruta
+  min_sdk_android: 21 # opcional
