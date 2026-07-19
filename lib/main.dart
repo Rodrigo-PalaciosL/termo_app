@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'src/data/models/termo_database.dart';
 import 'src/domain/engine/termo_engine.dart';
 import 'src/utils/unit_converter.dart';
+import 'src/presentation/widgets/tv_diagram.dart';
 
 void main() {
   runApp(const TermoApp());
@@ -388,6 +389,12 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
             if (_resultado != null) ...[
               const SizedBox(height: 24),
               _buildResultCard(),
+              const SizedBox(height: 24),
+              TvDiagram(
+                tablaSaturacion: _engine!.db.tablaSaturacion,
+                currentV: _resultado!.v,
+                currentT: _resultado!.t,
+              ),
             ],
           ],
         ),
