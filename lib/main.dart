@@ -10,31 +10,75 @@ void main() {
   runApp(const TermoApp());
 }
 
-class TermoApp extends StatelessWidget {
+class TermoApp extends StatefulWidget {
   const TermoApp({super.key});
 
-  @override //Ejecutor clave
+  @override
+  State<TermoApp> createState() => _TermoAppState();
+}
+
+class _TermoAppState extends State<TermoApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+  Color _seedColor = Colors.blue;
+
+  void _updateThemeMode(ThemeMode mode) {
+    setState(() => _themeMode = mode);
+  }
+
+  void _updateSeedColor(Color color) {
+    setState(() => _seedColor = color);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Termo App',
-      debugShowCheckedModeBanner: false, //Oculta el banner de debug
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: _seedColor, brightness: Brightness.light),
         useMaterial3: true,
       ),
-      home: const MainScreen(),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: _seedColor, brightness: Brightness.dark),
+        useMaterial3: true,
+      ),
+      themeMode: _themeMode,
+      home: MainScreen(
+        onThemeModeChanged: _updateThemeMode,
+        onSeedColorChanged: _updateSeedColor,
+        currentThemeMode: _themeMode,
+        currentSeedColor: _seedColor,
+      ),
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final Function(ThemeMode) onThemeModeChanged;
+  final Function(Color) onSeedColorChanged;
+  final ThemeMode currentThemeMode;
+  final Color currentSeedColor;
+
+  const MainScreen({
+    super.key,
+    required this.onThemeModeChanged,
+    required this.onSeedColorChanged,
+    required this.currentThemeMode,
+    required this.currentSeedColor,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin {
+  // --- CONFIGURACIÓN DE ANIMACIÓN ---
+  static const Duration _drawerDuration = Duration(milliseconds: 500);
+  
+  late AnimationController _drawerController;
+  late Animation<Offset> _drawerOffset;
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   TermoEngine? _engine;
   bool _isLoading = true;
   String? _errorMessage;
@@ -53,7 +97,34 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    _drawerController = AnimationController(
+      vsync: this,
+      duration: _drawerDuration,
+    );
+    _drawerOffset = Tween<Offset>(
+      begin: const Offset(-1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _drawerController,
+      curve: Curves.easeInOut,
+    ));
     _loadDatabase();
+  }
+
+  @override
+  void dispose() {
+    _drawerController.dispose();
+    _val1Controller.dispose();
+    _val2Controller.dispose();
+    super.dispose();
+  }
+
+  void _toggleDrawer() {
+    if (_drawerController.isCompleted) {
+      _drawerController.reverse();
+    } else {
+      _drawerController.forward();
+    }
   }
 
   Future<void> _loadDatabase() async {
@@ -164,18 +235,34 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('TermoApp - Motor Térmico'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Selección de modo
-            Card(
+    return Stack(
+      children: [
+        Scaffold(
+          key: _scaffoldKey,
+          appBar: AppBar(
+            title: const Text('TermoApp - Motor Térmico'),
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            leading: IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: _toggleDrawer,
+            ),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Fluido: Amoniaco (NH₃)',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                // Selección de modo
+                Card(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: DropdownButtonHideUnderline(
@@ -305,6 +392,16 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
       ),
+    ),
+    // --- BARRA LATERAL PERSONALIZADA ---
+    SlideTransition(
+      position: _drawerOffset,
+      child: Material(
+        elevation: 16,
+        child: _buildSettingsDrawer(),
+      ),
+    ),
+    ],
     );
   }
 
@@ -368,6 +465,133 @@ class _MainScreenState extends State<MainScreen> {
           Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
           Text(value, style: const TextStyle(fontFamily: 'monospace')),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsDrawer() {
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      height: MediaQuery.of(context).size.height,
+      color: Theme.of(context).colorScheme.surface,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header con botón X en la misma posición que el engranaje
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(left: 12.0),
+                    child: Text(
+                      'Configuraciones',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: _toggleDrawer,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  const Text(
+                    'Apariencia',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  // Selector de Modo Claro/Oscuro
+                  SegmentedButton<ThemeMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: Icon(Icons.light_mode),
+                        label: Text('Claro'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: Icon(Icons.dark_mode),
+                        label: Text('Oscuro'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        icon: Icon(Icons.settings_brightness),
+                        label: Text('Sistema'),
+                      ),
+                    ],
+                    selected: {widget.currentThemeMode},
+                    onSelectionChanged: (Set<ThemeMode> newSelection) {
+                      widget.onThemeModeChanged(newSelection.first);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Paleta de Colores',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  // Grid de colores para la semilla del tema
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _buildColorOption(Colors.blue),
+                      _buildColorOption(Colors.red),
+                      _buildColorOption(Colors.green),
+                      _buildColorOption(Colors.orange),
+                      _buildColorOption(Colors.purple),
+                      _buildColorOption(Colors.teal),
+                      _buildColorOption(Colors.brown),
+                      _buildColorOption(Colors.pink),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  const ListTile(
+                    leading: Icon(Icons.info_outline),
+                    title: Text('Versión 1.0.0'),
+                    subtitle: Text('TermoApp Engine v2'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorOption(Color color) {
+    final bool isSelected = widget.currentSeedColor == color;
+    return GestureDetector(
+      onTap: () => widget.onSeedColorChanged(color),
+      child: Container(
+        width: 45,
+        height: 45,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: isSelected
+              ? Border.all(color: Theme.of(context).colorScheme.outline, width: 3)
+              : null,
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: color.withValues(alpha: 0.4),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+          ],
+        ),
+        child: isSelected
+            ? const Icon(Icons.check, color: Colors.white)
+            : null,
       ),
     );
   }
