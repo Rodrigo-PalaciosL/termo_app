@@ -242,7 +242,7 @@ class TermoEngine {
   PropiedadSobrecalentada _obtenerPropiedadesEnBloquePorT(BloquePresionSobrecalentado bloque, double tUser) {
     final props = bloque.propiedadesPorT;
     if (tUser < bloque.tSat - _epsilon) throw Exception("T en saturación.");
-    if (tUser > props.last.t + _epsilon) throw Exception("T fuera de rango.");
+    if (tUser > props.last.t + _epsilon) throw Exception("T fuera de rango sobrecaletad");
 
     for (var p in props) if (_sonIguales(p.t, tUser, epsilon: _epsilon)) return p;
     for (int i = 0; i < props.length - 1; i++) {
@@ -417,5 +417,41 @@ class TermoEngine {
     } else {
       throw Exception("Saturación. Ingrese calidad (x) o volumen (v).");
     }
+  }
+
+  EstadoTermodinamico resolverEstadoPorTyX(double tUser, double xUser) {
+    if (tUser < -75 || tUser > 132) {
+      throw Exception("La temperatura debe estar entre -75°C y 132°C.");
+    }
+    if (xUser < 0 || xUser > 1) throw Exception("La calidad (x) debe estar entre 0 y 1.");
+    PuntoSaturacion sat = _buscarPropiedadesSaturacionPorT(tUser);
+    return EstadoTermodinamico(
+      fase: "Mezcla Húmeda",
+      p: sat.pSat,
+      t: tUser,
+      v: sat.vf + xUser * (sat.vg - sat.vf),
+      u: sat.uf + xUser * (sat.ug - sat.uf),
+      h: sat.hf + xUser * (sat.hg - sat.hf),
+      s: sat.sf + xUser * (sat.sg - sat.sf),
+      x: xUser,
+    );
+  }
+
+  EstadoTermodinamico resolverEstadoPorPyX(double pUser, double xUser) {
+    if (pUser < 8 || pUser > 11290) {
+      throw Exception("La presión debe estar entre 8 kPa y 11290 kPa.");
+    }
+    if (xUser < 0 || xUser > 1) throw Exception("La calidad (x) debe estar entre 0 y 1.");
+    PuntoSaturacion sat = _buscarPropiedadesSaturacionPorP(pUser);
+    return EstadoTermodinamico(
+      fase: "Mezcla Húmeda",
+      p: pUser,
+      t: sat.t,
+      v: sat.vf + xUser * (sat.vg - sat.vf),
+      u: sat.uf + xUser * (sat.ug - sat.uf),
+      h: sat.hf + xUser * (sat.hg - sat.hf),
+      s: sat.sf + xUser * (sat.sg - sat.sf),
+      x: xUser,
+    );
   }
 }

@@ -44,14 +44,14 @@ T_crit_c = 132.25    # Punto crítico (°C)
 # --- AJUSTE DE PARÁMETROS DE EXTRACCIÓN ---
 # Nos alejamos sutilmente de los límites físicos para evitar fallos en CoolProp
 T_min_extrac = -75.0  # Límite inferior seguro
-T_max_extrac = 130.0  # Límite superior seguro (subcrítico)
-paso_temperatura = 2.0  # Resolución del barrido en °C (ajustable)
+T_max_extrac = 132.0  # Límite superior seguro (subcrítico)
+paso_temperatura = 1.0  # Resolución del barrido en °C (ajustable)
 
 # Generación del vector de temperaturas a evaluar
 temperaturas_celsius = np.arange(T_min_extrac, T_max_extrac + paso_temperatura, paso_temperatura)
 
 # Opcional: Asegurar que el límite superior exacto no cause desbordamiento
-temperaturas_celsius = temperaturas_celsius[temperaturas_celsius < T_crit_c - 0.5]
+temperaturas_celsius = temperaturas_celsius[temperaturas_celsius < T_crit_c - 0.2]
 # =====================================================================
 
 tabla_saturacion = []
