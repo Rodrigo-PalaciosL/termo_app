@@ -32,12 +32,14 @@ T_triple_c = -77.7
 # Presiones para líquido comprimido (Enfoque en presiones medias y altas)
 presiones_kpa = np.array([
     500.0, 1000.0, 2000.0, 5000.0, 10000.0,
-    15000.0, 20000.0, 30000.0, 40000.0, 50000.0
+    15000.0, 20000.0, 30000.0, 40000.0, 50000.0,
+    60000.0, 70000.0, 80000.0, 90000.0, 100000.0,
+    500000.0, 100000.0, 1500000.0, 2000000.0, 3000000.0
 ], dtype=np.float64)
 
 # Rango de temperaturas en °C
 T_min = -70.0
-T_max = 130.0
+T_max = 200.0
 paso_T = 5.0
 
 temperaturas_fijas_c = np.arange(T_min, T_max + paso_T, paso_T)

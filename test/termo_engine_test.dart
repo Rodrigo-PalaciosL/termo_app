@@ -12,16 +12,17 @@ void main() {
 
   setUp(() async {
     final satRaw = await rootBundle.loadString('assets/amoniaco_saturacion.json');
-    final overRaw = await rootBundle.loadString(
-      'assets/amoniaco_sobrecalentado.json',
-    );
+    final overRaw = await rootBundle.loadString('assets/amoniaco_sobrecalentado.json');
+    final liqRaw = await rootBundle.loadString('assets/amoniaco_liquido.json');
 
     final satJson = jsonDecode(satRaw) as Map<String, dynamic>;
     final overJson = jsonDecode(overRaw) as List<dynamic>;
+    final liqJson = jsonDecode(liqRaw) as List<dynamic>;
 
     final db = TermoDatabase.fromRawData(
       jsonSaturacion: satJson['tabla_saturacion'] as List<dynamic>,
       jsonSobrecalentado: overJson,
+      jsonLiquido: liqJson,
     );
 
     engine = TermoEngine(db: db);

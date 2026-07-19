@@ -91,3 +91,4 @@ flutter:
   assets:
     - assets/amoniaco_saturacion.json
     - assets/amoniaco_sobrecalentado.json
+    - assets/amoniaco_liquido.json

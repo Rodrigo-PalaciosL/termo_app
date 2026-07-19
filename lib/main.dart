@@ -12,10 +12,11 @@ void main() {
 class TermoApp extends StatelessWidget {
   const TermoApp({super.key});
 
-  @override
+  @override //Ejecutor clave
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Termo App',
+      debugShowCheckedModeBanner: false, //Oculta el banner de debug
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -41,7 +42,7 @@ class _MainScreenState extends State<MainScreen> {
   final TextEditingController _val1Controller = TextEditingController();
   final TextEditingController _val2Controller = TextEditingController();
 
-  String _selectedMode = 'T-v'; // Modos: 'T-v', 'P-T', 'P-v'
+  String _selectedMode = 'T-v'; // Modos: 'T-v', 'P-T', 'P-v', 'T-x', 'P-x'
   EstadoTermodinamico? _resultado;
 
   @override
@@ -56,13 +57,17 @@ class _MainScreenState extends State<MainScreen> {
           await rootBundle.loadString('assets/amoniaco_saturacion.json');
       final String sobreData =
           await rootBundle.loadString('assets/amoniaco_sobrecalentado.json');
+      final String liqData =
+          await rootBundle.loadString('assets/amoniaco_liquido.json');
 
       final Map<String, dynamic> satJson = jsonDecode(satData);
       final List<dynamic> sobreJson = jsonDecode(sobreData);
+      final List<dynamic> liqJson = jsonDecode(liqData);
 
       final db = TermoDatabase.fromRawData(
         jsonSaturacion: satJson['tabla_saturacion'] as List<dynamic>,
         jsonSobrecalentado: sobreJson,
+        jsonLiquido: liqJson,
       );
 
       setState(() {
@@ -96,6 +101,10 @@ class _MainScreenState extends State<MainScreen> {
         res = _engine!.resolverEstadoPorTyV(v1, v2);
       } else if (_selectedMode == 'P-T') {
         res = _engine!.resolverEstadoPorPyT(v1, v2);
+      } else if (_selectedMode == 'T-x') {
+        res = _engine!.resolverEstadoPorTyX(v1, v2);
+      } else if (_selectedMode == 'P-x') {
+        res = _engine!.resolverEstadoPorPyX(v1, v2);
       } else {
         res = _engine!.resolverEstadoPorPv(v1, v2);
       }
@@ -158,12 +167,20 @@ class _MainScreenState extends State<MainScreen> {
                         child: Text('Temperatura (°C) y Volumen (m³/kg)'),
                       ),
                       DropdownMenuItem(
+                        value: 'P-v',
+                        child: Text('Presión (kPa) y Volumen (m³/kg)'),
+                      ),
+                      DropdownMenuItem(
                         value: 'P-T',
                         child: Text('Presión (kPa) y Temperatura (°C)'),
                       ),
                       DropdownMenuItem(
-                        value: 'P-v',
-                        child: Text('Presión (kPa) y Volumen (m³/kg)'),
+                        value: 'T-x',
+                        child: Text('Temperatura (°C) y Calidad (x)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'P-x',
+                        child: Text('Presión (kPa) y Calidad (x)'),
                       ),
                     ],
                     onChanged: (value) {
@@ -185,9 +202,9 @@ class _MainScreenState extends State<MainScreen> {
                   child: TextField(
                     controller: _val1Controller,
                     decoration: InputDecoration(
-                      labelText: _selectedMode == 'T-v'
+                      labelText: (_selectedMode == 'T-v' || _selectedMode == 'T-x')
                           ? 'T (°C)'
-                          : (_selectedMode == 'P-T' ? 'P (kPa)' : 'P (kPa)'),
+                          : 'P (kPa)',
                       border: const OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
@@ -198,9 +215,9 @@ class _MainScreenState extends State<MainScreen> {
                   child: TextField(
                     controller: _val2Controller,
                     decoration: InputDecoration(
-                      labelText: _selectedMode == 'T-v'
+                      labelText: (_selectedMode == 'T-v' || _selectedMode == 'P-v')
                           ? 'v (m³/kg)'
-                          : (_selectedMode == 'P-T' ? 'T (°C)' : 'v (m³/kg)'),
+                          : (_selectedMode == 'P-T' ? 'T (°C)' : 'x (0 - 1)'),
                       border: const OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
