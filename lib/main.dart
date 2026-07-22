@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+// import 'package:flutter_svg/flutter_svg.dart';
 import 'src/data/models/termo_database.dart';
 import 'src/domain/engine/termo_engine.dart';
 import 'src/utils/unit_converter.dart';
@@ -244,12 +244,6 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           appBar: AppBar(
             title: Row(
               children: [
-                SvgPicture.asset(
-                  'assets/logo.svg',
-                  height: 32,
-                  placeholderBuilder: (context) => const Icon(Icons.science_outlined),
-                ),
-                const SizedBox(width: 12),
                 const Text('TermoApp - Motor Térmico'),
               ],
             ),
