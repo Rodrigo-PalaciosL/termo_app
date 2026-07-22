@@ -35,6 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   fl_chart: ^0.70.2
+  flutter_svg: ^2.0.10+1
 
 dev_dependencies:
   flutter_test:
@@ -92,10 +93,15 @@ flutter:
     - assets/amoniaco_saturacion.json
     - assets/amoniaco_sobrecalentado.json
     - assets/amoniaco_liquido.json
-    - assets/logo.png
+    - assets/logo.svg
+    - assets/Edit_Logo.svg
+    - assets/logo_cf.png
+    - assets/logo_sf.png
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo.png" # <--- Asegúrate de que tu logo esté en esta ruta
-  min_sdk_android: 21 # opcional
+  image_path: "assets/logo_cf.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#252d37ff" # Color de fondo
+  adaptive_icon_foreground: "assets/logo_sf.png"
