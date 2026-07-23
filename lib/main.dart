@@ -380,7 +380,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 32),
 
             ElevatedButton.icon(
               onPressed: _calcular,
@@ -400,6 +400,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                 currentV: _resultado!.v,
                 currentT: _resultado!.t,
               ),
+              const SizedBox(height: 32),
             ],
           ],
         ),

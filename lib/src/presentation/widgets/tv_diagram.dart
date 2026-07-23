@@ -48,7 +48,7 @@ class TvDiagram extends StatelessWidget {
           ),
         ),
         AspectRatio(
-          aspectRatio: 1.5,
+          aspectRatio: 1.0,
           child: Container(
             padding: const EdgeInsets.fromLTRB(10, 20, 20, 10),
             decoration: BoxDecoration(
@@ -121,7 +121,7 @@ class TvDiagram extends StatelessWidget {
                 minX: -3.5,
                 maxX: 1.5,
                 minY: -80,
-                maxY: 160,
+                maxY: 280,
                 lineBarsData: [
                   // 1. El Domo de Saturación (Campana Simétrica)
                   LineChartBarData(
