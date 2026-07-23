@@ -3,16 +3,16 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/saturacion_model.dart';
 
-class TvDiagram extends StatelessWidget {
+class PvDiagram extends StatelessWidget {
   final List<PuntoSaturacion> tablaSaturacion;
   final double currentV;
-  final double currentT;
+  final double currentP;
 
-  const TvDiagram({
+  const PvDiagram({
     super.key,
     required this.tablaSaturacion,
     required this.currentV,
-    required this.currentT,
+    required this.currentP,
   });
 
   // Función para calcular logaritmo en base 10
@@ -20,20 +20,19 @@ class TvDiagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Transformación Logarítmica para el domo
+    // 1. Transformación Logarítmica para el domo (Eje X: v)
     final List<FlSpot> liquidSpots = tablaSaturacion
-        .map((p) => FlSpot(_log10(p.vf), p.t))
+        .map((p) => FlSpot(_log10(p.vf), p.pSat))
         .toList();
     
     final List<FlSpot> vaporSpots = tablaSaturacion.reversed
-        .map((p) => FlSpot(_log10(p.vg), p.t))
+        .map((p) => FlSpot(_log10(p.vg), p.pSat))
         .toList();
 
     // Unión de ambas curvas para el domo completo
     final List<FlSpot> domeSpots = [...liquidSpots, ...vaporSpots];
 
     // 2. Transformación para el punto actual
-    // Evitamos log de 0 o negativo por seguridad
     final double safeV = currentV > 0 ? currentV : 0.001;
     final double currentLogV = _log10(safeV);
 
@@ -43,12 +42,12 @@ class TvDiagram extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.only(left: 8.0, bottom: 8.0),
           child: Text(
-            'Diagrama T-v (Escala Logarítmica)',
+            'Diagrama P-v (v en Escala Logarítmica)',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ),
         AspectRatio(
-          aspectRatio: 1.0,
+          aspectRatio: 0.8,
           child: Container(
             padding: const EdgeInsets.fromLTRB(10, 20, 20, 10),
             decoration: BoxDecoration(
@@ -62,10 +61,9 @@ class TvDiagram extends StatelessWidget {
                     getTooltipColor: (spot) => Colors.blueGrey.withValues(alpha: 0.9),
                     getTooltipItems: (List<LineBarSpot> touchedSpots) {
                       return touchedSpots.map((barSpot) {
-                        // Revertimos el log para mostrar el valor real en el tooltip
                         final double realV = pow(10, barSpot.x).toDouble();
                         return LineTooltipItem(
-                          'T: ${barSpot.y.toStringAsFixed(2)} °C\nv: ${realV.toStringAsFixed(5)} m³/kg',
+                          'P: ${barSpot.y.toStringAsFixed(2)} kPa\nv: ${realV.toStringAsFixed(5)} m³/kg',
                           const TextStyle(color: Colors.white, fontSize: 12),
                         );
                       }).toList();
@@ -75,8 +73,8 @@ class TvDiagram extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
-                  horizontalInterval: 40,
-                  verticalInterval: 1, // Una línea por cada orden de magnitud
+                  horizontalInterval: 10000,
+                  verticalInterval: 1,
                   getDrawingHorizontalLine: (value) => const FlLine(color: Colors.white10, strokeWidth: 1),
                   getDrawingVerticalLine: (value) => const FlLine(color: Colors.white10, strokeWidth: 1),
                 ),
@@ -100,11 +98,11 @@ class TvDiagram extends StatelessWidget {
                     ),
                   ),
                   leftTitles: AxisTitles(
-                    axisNameWidget: const Text('T (°C)', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    axisNameWidget: const Text('P (kPa)', style: TextStyle(color: Colors.white70, fontSize: 12)),
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 40,
-                      interval: 40,
+                      reservedSize: 45,
+                      interval: 10000,
                       getTitlesWidget: (value, meta) {
                         return Text(value.toInt().toString(), style: const TextStyle(color: Colors.white54, fontSize: 10));
                       },
@@ -117,29 +115,26 @@ class TvDiagram extends StatelessWidget {
                   show: true,
                   border: Border.all(color: Colors.white24, width: 1),
                 ),
-                // Rangos optimizados para log10(v) del amoníaco
                 minX: -3.5,
                 maxX: 1.5,
-                minY: -80,
-                maxY: 280,
+                minY: 0,
+                maxY: 55000,
                 lineBarsData: [
-                  // 1. El Domo de Saturación (Campana Simétrica)
                   LineChartBarData(
                     spots: domeSpots,
                     isCurved: true,
                     curveSmoothness: 0.35,
-                    color: Colors.blueAccent,
+                    color: Colors.redAccent,
                     barWidth: 2,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.blueAccent.withValues(alpha: 0.1),
+                      color: Colors.redAccent.withValues(alpha: 0.1),
                     ),
                   ),
-                  // 2. Punto del Estado Actual
                   LineChartBarData(
-                    spots: [FlSpot(currentLogV, currentT)],
+                    spots: [FlSpot(currentLogV, currentP)],
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) {
