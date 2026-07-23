@@ -7,6 +7,7 @@ import 'src/data/models/termo_database.dart';
 import 'src/domain/engine/termo_engine.dart';
 import 'src/utils/unit_converter.dart';
 import 'src/presentation/widgets/tv_diagram.dart';
+import 'src/presentation/widgets/pv_diagram.dart';
 
 void main() {
   runApp(const TermoApp());
@@ -90,6 +91,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
   final TextEditingController _val2Controller = TextEditingController();
 
   String _selectedMode = 'T-v'; // Modos: 'T-v', 'P-T', 'P-v', 'T-x', 'P-x'
+  String _selectedDiagram = 'T-v'; // Diagramas: 'T-v', 'P-v'
   EstadoTermodinamico? _resultado;
 
   // Unidades seleccionadas
@@ -395,11 +397,18 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
               const SizedBox(height: 24),
               _buildResultCard(),
               const SizedBox(height: 24),
-              TvDiagram(
-                tablaSaturacion: _engine!.db.tablaSaturacion,
-                currentV: _resultado!.v,
-                currentT: _resultado!.t,
-              ),
+              if (_selectedDiagram == 'T-v')
+                TvDiagram(
+                  tablaSaturacion: _engine!.db.tablaSaturacion,
+                  currentV: _resultado!.v,
+                  currentT: _resultado!.t,
+                )
+              else
+                PvDiagram(
+                  tablaSaturacion: _engine!.db.tablaSaturacion,
+                  currentV: _resultado!.v,
+                  currentP: _resultado!.p,
+                ),
               const SizedBox(height: 32),
             ],
           ],
@@ -542,6 +551,32 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                     selected: {widget.currentThemeMode},
                     onSelectionChanged: (Set<ThemeMode> newSelection) {
                       widget.onThemeModeChanged(newSelection.first);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Diagrama Predeterminado',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(
+                        value: 'T-v',
+                        label: Text('T-v'),
+                        icon: Icon(Icons.show_chart),
+                      ),
+                      ButtonSegment(
+                        value: 'P-v',
+                        label: Text('P-v'),
+                        icon: Icon(Icons.show_chart),
+                      ),
+                    ],
+                    selected: {_selectedDiagram},
+                    onSelectionChanged: (Set<String> newSelection) {
+                      setState(() {
+                        _selectedDiagram = newSelection.first;
+                      });
                     },
                   ),
                   const SizedBox(height: 24),
