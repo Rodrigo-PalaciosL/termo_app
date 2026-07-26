@@ -24,7 +24,7 @@ class PvDiagram extends StatelessWidget {
     final List<FlSpot> liquidSpots = tablaSaturacion
         .map((p) => FlSpot(_log10(p.vf), p.pSat))
         .toList();
-    
+
     final List<FlSpot> vaporSpots = tablaSaturacion.reversed
         .map((p) => FlSpot(_log10(p.vg), p.pSat))
         .toList();
@@ -86,7 +86,11 @@ class PvDiagram extends StatelessWidget {
                       reservedSize: 30,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        switch (value.toInt()) {
+                        if ((value - value.round()).abs() > 0.01) {
+                          return const SizedBox();
+                        }
+
+                        switch (value.round()) {
                           case -3: return const Text('0.001', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case -2: return const Text('0.01', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case -1: return const Text('0.1', style: TextStyle(color: Colors.white54, fontSize: 10));
@@ -104,7 +108,10 @@ class PvDiagram extends StatelessWidget {
                       reservedSize: 45,
                       interval: 10000,
                       getTitlesWidget: (value, meta) {
-                        return Text(value.toInt().toString(), style: const TextStyle(color: Colors.white54, fontSize: 10));
+                        if ((value - value.round()).abs() > 0.01) {
+                          return const SizedBox();
+                        }
+                        return Text(value.round().toString(), style: const TextStyle(color: Colors.white54, fontSize: 10));
                       },
                     ),
                   ),

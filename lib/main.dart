@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+//0.001072
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:flutter_svg/flutter_svg.dart';
@@ -8,6 +8,7 @@ import 'src/domain/engine/termo_engine.dart';
 import 'src/utils/unit_converter.dart';
 import 'src/presentation/widgets/tv_diagram.dart';
 import 'src/presentation/widgets/pv_diagram.dart';
+import 'src/presentation/manual/manual_screen.dart';
 
 void main() {
   runApp(const TermoApp());
@@ -27,7 +28,6 @@ class _TermoAppState extends State<TermoApp> {
   void _updateThemeMode(ThemeMode mode) {
     setState(() => _themeMode = mode);
   }
-
   void _updateSeedColor(Color color) {
     setState(() => _seedColor = color);
   }
@@ -600,7 +600,22 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                       _buildColorOption(Colors.pink),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.book_outlined),
+                    title: const Text('Manual de Usuario'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      _toggleDrawer();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ManualScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   const ListTile(
                     leading: Icon(Icons.info_outline),
                     title: Text('Versión 1.0.0'),
