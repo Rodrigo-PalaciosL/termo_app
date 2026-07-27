@@ -20,13 +20,13 @@ class PvDiagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Transformación Logarítmica para el domo (Eje X: v)
+    // 1. Transformación Logarítmica para el domo
     final List<FlSpot> liquidSpots = tablaSaturacion
-        .map((p) => FlSpot(_log10(p.vf), p.pSat))
+        .map((p) => FlSpot(_log10(p.vf), _log10(p.pSat)))
         .toList();
 
     final List<FlSpot> vaporSpots = tablaSaturacion.reversed
-        .map((p) => FlSpot(_log10(p.vg), p.pSat))
+        .map((p) => FlSpot(_log10(p.vg), _log10(p.pSat)))
         .toList();
 
     // Unión de ambas curvas para el domo completo
@@ -34,7 +34,9 @@ class PvDiagram extends StatelessWidget {
 
     // 2. Transformación para el punto actual
     final double safeV = currentV > 0 ? currentV : 0.001;
+    final double safeP = currentP > 0 ? currentP : 1.0;
     final double currentLogV = _log10(safeV);
+    final double currentLogP = _log10(safeP);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,7 +44,7 @@ class PvDiagram extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.only(left: 8.0, bottom: 8.0),
           child: Text(
-            'Diagrama P-v (v en Escala Logarítmica)',
+            'Diagrama P-v (Escala Logarítmica)',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ),
@@ -62,8 +64,9 @@ class PvDiagram extends StatelessWidget {
                     getTooltipItems: (List<LineBarSpot> touchedSpots) {
                       return touchedSpots.map((barSpot) {
                         final double realV = pow(10, barSpot.x).toDouble();
+                        final double realP = pow(10, barSpot.y).toDouble();
                         return LineTooltipItem(
-                          'P: ${barSpot.y.toStringAsFixed(2)} kPa\nv: ${realV.toStringAsFixed(5)} m³/kg',
+                          'P: ${realP.toStringAsFixed(2)} kPa\nv: ${realV.toStringAsFixed(5)} m³/kg',
                           const TextStyle(color: Colors.white, fontSize: 12),
                         );
                       }).toList();
@@ -73,7 +76,7 @@ class PvDiagram extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
-                  horizontalInterval: 10000,
+                  horizontalInterval: 1,
                   verticalInterval: 1,
                   getDrawingHorizontalLine: (value) => const FlLine(color: Colors.white10, strokeWidth: 1),
                   getDrawingVerticalLine: (value) => const FlLine(color: Colors.white10, strokeWidth: 1),
@@ -106,12 +109,21 @@ class PvDiagram extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 45,
-                      interval: 10000,
+                      interval: 1,
                       getTitlesWidget: (value, meta) {
                         if ((value - value.round()).abs() > 0.01) {
                           return const SizedBox();
                         }
-                        return Text(value.round().toString(), style: const TextStyle(color: Colors.white54, fontSize: 10));
+                        
+                        switch (value.round()) {
+                          case 0: return const Text('1', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          case 1: return const Text('10', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          case 2: return const Text('100', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          case 3: return const Text('1000', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          case 4: return const Text('10000', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          case 5: return const Text('100000', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          default: return const SizedBox();
+                        }
                       },
                     ),
                   ),
@@ -124,8 +136,8 @@ class PvDiagram extends StatelessWidget {
                 ),
                 minX: -3.5,
                 maxX: 1.5,
-                minY: 0,
-                maxY: 55000,
+                minY: 0.5,
+                maxY: 4.5,
                 lineBarsData: [
                   LineChartBarData(
                     spots: domeSpots,
@@ -141,7 +153,7 @@ class PvDiagram extends StatelessWidget {
                     ),
                   ),
                   LineChartBarData(
-                    spots: [FlSpot(currentLogV, currentP)],
+                    spots: [FlSpot(currentLogV, currentLogP)],
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) {
