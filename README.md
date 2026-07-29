@@ -4,13 +4,6 @@
   <img src="assets/logo_cf.png" alt="TermoEngine Logo" width="200"/>
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Flutter-%2302569B.svg?style=flat&logo=Flutter&logoColor=white" alt="Flutter"/>
-  <img src="https://img.shields.io/badge/Dart-%230175C2.svg?style=flat&logo=dart&logoColor=white" alt="Dart"/>
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"/>
-  <img src="https://img.shields.io/badge/Version-1.0.0-blue.svg" alt="Version"/>
-</p>
-
 TermoEngine es una aplicación desarrollada en Flutter diseñada para facilitar el cálculo de propiedades termodinámicas del amoniaco ($NH_3$). Utiliza bases de datos integradas en formato JSON para realizar interpolaciones precisas y determinar el estado termodinámico de una sustancia a partir de diversas combinaciones de entrada.
 
 ---
@@ -31,7 +24,7 @@ La aplicación integra `fl_chart` para renderizar la campana de saturación y po
 
 | Diagrama T-v | Diagrama P-v |
 | :---: | :---: |
-| ![T-v Diagram](assets/screenshots/screenshot_tv.png) | ![P-v Diagram](assets/screenshots/screenshot_pv.png) |
+| ![T-v Diagram](https://via.placeholder.com/300x200?text=Diagrama+T-v) | ![P-v Diagram](https://via.placeholder.com/300x200?text=Diagrama+P-v) |
 *Imágenes referenciales de la interfaz de usuario.*
 
 ## 🛠️ Arquitectura y Tecnologías
@@ -75,7 +68,4 @@ La aplicación integra `fl_chart` para renderizar la campana de saturación y po
 
 ---
 
-Desarrollado para la facilidad del cálculo de propiedades termodinámicas.
-
-<p></p>
-<p></p>
+Desarrollado con ❤️ para la comunidad de ingeniería.
