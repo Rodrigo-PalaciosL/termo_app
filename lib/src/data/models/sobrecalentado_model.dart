@@ -56,7 +56,7 @@ class BloquePresionSobrecalentado {
     final tSatValue = map['T_sat'];
     final listaT = map['propiedades_por_T'];
 
-    if (pValue is! num || tSatValue is! num || listaT is! List) {
+    if (pValue is! num || listaT is! List) {
       throw const FormatException('Bloque sobrecalentado incompleto');
     }
 
@@ -81,7 +81,8 @@ class BloquePresionSobrecalentado {
 
     return BloquePresionSobrecalentado(
       p: pValue.toDouble(),
-      tSat: tSatValue.toDouble(),
+      tSat: (tSatValue is num) ? tSatValue.toDouble() : -1000.0,
+      // Validación para N/A en Temperatura de saturación (tSat)
       propiedadesPorT: listaPropiedades,
     );
   }
