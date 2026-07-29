@@ -104,4 +104,4 @@ flutter_launcher_icons:
   image_path: "assets/logo_cf.png"
   min_sdk_android: 21
   adaptive_icon_background: "#252d37ff" # Color de fondo
-  adaptive_icon_foreground: "assets/logo_sf.png"
+  adaptive_icon_foreground: "assets/logo_sf.png" #logo
