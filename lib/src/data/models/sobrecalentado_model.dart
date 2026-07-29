@@ -82,7 +82,7 @@ class BloquePresionSobrecalentado {
     return BloquePresionSobrecalentado(
       p: pValue.toDouble(),
       tSat: (tSatValue is num) ? tSatValue.toDouble() : -1000.0,
-      // Validación para N/A en Temperatura de saturación
+      // Validación para N/A en Temperatura de saturación (tSat)
       propiedadesPorT: listaPropiedades,
     );
   }
