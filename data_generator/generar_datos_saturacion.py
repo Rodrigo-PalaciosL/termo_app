@@ -28,7 +28,8 @@ fluid = 'Ammonia'
 # Establecer referencia igual a EES (IIR es el estándar para Amoníaco en EES)
 CP.set_reference_state(fluid, 'IIR')
 
-# Evalua la temperatura crítica del fluido pidiéndole a CoolProp su valor directo
+# Obtenemos las constantes críticas usando variables de estado estables (esto no falla)
+# Evaluamos la temperatura crítica del fluido pidiéndole a CoolProp su valor directo
 P_crit_pa = CP.PropsSI('Pcrit', 'P', 0, 'T', 0, fluid)
 rho_crit_mass = CP.PropsSI('rhocrit', 'P', 0, 'T', 0, fluid)
 
