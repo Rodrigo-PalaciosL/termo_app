@@ -94,11 +94,13 @@ class PvDiagram extends StatelessWidget {
                         }
 
                         switch (value.round()) {
+                          case -4: return const Text('0.0001', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case -3: return const Text('0.001', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case -2: return const Text('0.01', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case -1: return const Text('0.1', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case 0: return const Text('1', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case 1: return const Text('10', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          case 2: return const Text('100', style: TextStyle(color: Colors.white54, fontSize: 10));
                           default: return const SizedBox();
                         }
                       },
@@ -108,20 +110,23 @@ class PvDiagram extends StatelessWidget {
                     axisNameWidget: const Text('P (kPa)', style: TextStyle(color: Colors.white70, fontSize: 12)),
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 45,
+                      reservedSize: 35,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        if ((value - value.round()).abs() > 0.01) {
+                        final int power = value.round();
+                        if ((value - power).abs() > 0.01) {
                           return const SizedBox();
                         }
                         
                         switch (value.round()) {
                           case 0: return const Text('1', style: TextStyle(color: Colors.white54, fontSize: 10));
-                          case 1: return const Text('10', style: TextStyle(color: Colors.white54, fontSize: 10));
-                          case 2: return const Text('100', style: TextStyle(color: Colors.white54, fontSize: 10));
-                          case 3: return const Text('1000', style: TextStyle(color: Colors.white54, fontSize: 10));
-                          case 4: return const Text('10000', style: TextStyle(color: Colors.white54, fontSize: 10));
-                          case 5: return const Text('100000', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          case 1: return Text('10', style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center);
+                          case 2: return Text('10^2', style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center);
+                          case 3: return Text('10^3', style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center);
+                          case 4: return Text('10^4', style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center);
+                          case 5: return Text('10^5', style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center);
+                          case 6: return Text('10^6', style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center);
+                          case 7: return Text('10^7', style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center);
                           default: return const SizedBox();
                         }
                       },
@@ -134,10 +139,10 @@ class PvDiagram extends StatelessWidget {
                   show: true,
                   border: Border.all(color: Colors.white24, width: 1),
                 ),
-                minX: -3.5,
-                maxX: 1.5,
+                minX: -4,
+                maxX: 2,
                 minY: 0.5,
-                maxY: 4.5,
+                maxY: 7,
                 lineBarsData: [
                   LineChartBarData(
                     spots: domeSpots,

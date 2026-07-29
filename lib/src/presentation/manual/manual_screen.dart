@@ -86,19 +86,22 @@ class ManualScreen extends StatelessWidget {
           _buildInfoCard(
             context,
             'Límites Operacionales:',
-            '• Temperatura: -75 °C a 132 °C  (En Mezcla Húmeda)\n '
-            '• Calidad (x): 0.0 a 1.0\n'
+            '• Temperatura: -75 °C a 420 °C\n'
+            '• Presión: 8 kPa a 10,000,000 kPa\n'
+            '• Volumen específico (v): 0.0001 a 48 m³/kg\n'
+            '• Calidad (x): 0.0 a 1.0 (Hasta punto crítico ~132 °C)\n'
             '• Presión Crítica: 11,363.4 kPa',
             Icons.warning_amber_rounded,
           ),
           const SizedBox(height: 10),
           const Text(
-            'Mensajes comunes:',
+            'Explicación de errores comunes:',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const Text(
-            '• "La calidad (x) debe estar entre 0 y 1": Valor fuera de rango físico.\n'
-            '• "Fuera de límites": Valores superiores a la crítica o inferiores al punto triple.',
+            '• "v fuera de rango": El volumen ingresado es demasiado grande o pequeño para la presión/temperatura dada. Esto sucede porque el estado resultante caería fuera de los límites de nuestra base de datos termodinámica y no puede ser calculado.\n'
+            '• "La calidad (x) debe estar entre 0 y 1": La calidad solo es válida en la región de mezcla (saturación).\n'
+            '• "Saturación. Ingrese calidad (x) o volumen (v)": A una presión y temperatura de saturación, el sistema no puede distinguir la fase sin un tercer dato. Debe calcular en otro modo.',
           ),
           const SizedBox(height: 20),
 

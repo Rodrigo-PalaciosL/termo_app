@@ -242,7 +242,7 @@ class TermoEngine {
   PropiedadSobrecalentada _obtenerPropiedadesEnBloquePorT(BloquePresionSobrecalentado bloque, double tUser) {
     final props = bloque.propiedadesPorT;
     if (tUser < bloque.tSat - _epsilon) throw Exception("T en saturación.");
-    if (tUser > props.last.t + _epsilon) throw Exception("T fuera de rango sobrecaletad");
+    if (tUser > props.last.t + _epsilon) throw Exception("T fuera de rango sobrecalentado");
 
     for (var p in props) if (_sonIguales(p.t, tUser, epsilon: _epsilon)) return p;
     for (int i = 0; i < props.length - 1; i++) {
@@ -345,6 +345,12 @@ class TermoEngine {
   // ====================================================================
 
   EstadoTermodinamico resolverEstadoPorTyV(double tUser, double vUser) {
+    if (tUser < -75 || tUser > 420) {
+      throw Exception("Temperatura fuera de rango para el Amoniaco. El rango permitido es -75°C < T < 420°C.");
+    }
+    if (vUser < 0.0001 || vUser > 48) {
+      throw Exception("Volumen específico fuera de rango. Ingrese un valor entre 0.0001 y 48 m³/kg.");
+    }
     PuntoSaturacion limitesSat = _buscarPropiedadesSaturacionPorT(tUser);
     if (vUser < limitesSat.vf - _epsilon) {
       if (db.tablaLiquido.isNotEmpty) {
@@ -369,6 +375,12 @@ class TermoEngine {
   }
 
   EstadoTermodinamico resolverEstadoPorPv(double pUser, double vUser) {
+    if (pUser < 8 || pUser > 10000000) {
+      throw Exception("La presión debe estar entre 8 kPa y 10,000,000 kPa.");
+    }
+    if (vUser < 0.0001 || vUser > 48) {
+      throw Exception("Volumen específico fuera de rango. Ingrese un valor entre 0.0001 y 48 m³/kg.");
+    }
     PuntoSaturacion limitesSat = _buscarPropiedadesSaturacionPorP(pUser);
     if (vUser < limitesSat.vf - _epsilon) {
       if (db.tablaLiquido.isNotEmpty) {
@@ -393,6 +405,12 @@ class TermoEngine {
   }
 
   EstadoTermodinamico resolverEstadoPorPyT(double pUser, double tUser) {
+    if (tUser < -75 || tUser > 420) {
+      throw Exception("Temperatura fuera de rango para el Amoniaco. El rango permitido es -75°C < T < 420°C.");
+    }
+    if (pUser < 8 || pUser > 10000000) {
+      throw Exception("La presión debe estar entre 8 kPa y 10,000,000 kPa.");
+    }
     // Si la presión es supercrítica, intentamos resolver directamente
     if (pUser > db.tablaSaturacion.last.pSat) {
       if (tUser < 132.25 && db.tablaLiquido.isNotEmpty) {
