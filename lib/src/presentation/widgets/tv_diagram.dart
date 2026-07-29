@@ -89,11 +89,13 @@ class TvDiagram extends StatelessWidget {
                       interval: 1,
                       getTitlesWidget: (value, meta) {
                         switch (value.toInt()) {
+                          case -4: return const Text('0.0001', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case -3: return const Text('0.001', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case -2: return const Text('0.01', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case -1: return const Text('0.1', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case 0: return const Text('1', style: TextStyle(color: Colors.white54, fontSize: 10));
                           case 1: return const Text('10', style: TextStyle(color: Colors.white54, fontSize: 10));
+                          case 2: return const Text('100', style: TextStyle(color: Colors.white54, fontSize: 10));
                           default: return const SizedBox();
                         }
                       },
@@ -118,10 +120,10 @@ class TvDiagram extends StatelessWidget {
                   border: Border.all(color: Colors.white24, width: 1),
                 ),
                 // Rangos optimizados para log10(v) del amoníaco
-                minX: -3.5,
-                maxX: 1.5,
+                minX: -4,
+                maxX: 2,
                 minY: -80,
-                maxY: 280,
+                maxY: 440,
                 lineBarsData: [
                   // 1. El Domo de Saturación (Campana Simétrica)
                   LineChartBarData(
