@@ -1,8 +1,6 @@
 import 'dart:convert';
-//0.001072
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// import 'package:flutter_svg/flutter_svg.dart';
 import 'src/data/models/termo_database.dart';
 import 'src/domain/engine/termo_engine.dart';
 import 'src/utils/unit_converter.dart';
