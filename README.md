@@ -7,7 +7,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-%2302569B.svg?style=flat&logo=Flutter&logoColor=white" alt="Flutter"/>
   <img src="https://img.shields.io/badge/Dart-%230175C2.svg?style=flat&logo=dart&logoColor=white" alt="Dart"/>
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"/>
   <img src="https://img.shields.io/badge/Version-1.0.1-blue.svg" alt="Version"/>
 </p>
 
