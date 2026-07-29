@@ -24,7 +24,7 @@ La aplicación integra `fl_chart` para renderizar la campana de saturación y po
 
 | Diagrama T-v | Diagrama P-v |
 | :---: | :---: |
-| ![T-v Diagram](https://via.placeholder.com/300x200?text=Diagrama+T-v) | ![P-v Diagram](https://via.placeholder.com/300x200?text=Diagrama+P-v) |
+| ![T-v Diagram](assets/screenshots/screenshot_tv.png) | ![P-v Diagram](assets/screenshots/screenshot_pv.png) |
 *Imágenes referenciales de la interfaz de usuario.*
 
 ## 🛠️ Arquitectura y Tecnologías
