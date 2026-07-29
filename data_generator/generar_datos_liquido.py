@@ -31,15 +31,16 @@ T_triple_c = -77.7
 # --- CONFIGURACIÓN DE EXTRACCIÓN ---
 # Presiones para líquido comprimido (Enfoque en presiones medias y altas)
 presiones_kpa = np.array([
-    500.0, 1000.0, 2000.0, 5000.0, 10000.0,
+    500.0, 1000.0, 2000.0, 5000.0, 10000.0, 11300,
     15000.0, 20000.0, 30000.0, 40000.0, 50000.0,
     60000.0, 70000.0, 80000.0, 90000.0, 100000.0,
-    500000.0, 100000.0, 1500000.0, 2000000.0, 3000000.0
+    500000.0, 100000.0, 1500000.0, 2000000.0, 2100000.0,
+    2200000.0, 2300000.0
 ], dtype=np.float64)
 
 # Rango de temperaturas en °C
-T_min = -70.0
-T_max = 200.0
+T_min = -75.0
+T_max = 420.0
 paso_T = 5.0
 
 temperaturas_fijas_c = np.arange(T_min, T_max + paso_T, paso_T)
@@ -89,7 +90,6 @@ for p_kpa in presiones_kpa:
             (temperaturas_fijas_c < t_sat_c - 0.01) & (temperaturas_fijas_c > T_triple_c)
         ]
 
-        # Para líquido comprimido, solemos ordenar de mayor a menor temperatura o viceversa.
         # Aquí lo mantenemos ascendente.
         for t_c in temperaturas_validas:
             t_k = float(t_c + 273.15)
@@ -116,6 +116,7 @@ for p_kpa in presiones_kpa:
         if len(bloque_actual["propiedades_por_T"]) > 0:
             bloques_liquido.append(bloque_actual)
             print(f" -> Bloque P = {p_kpa} kPa procesado. Filas: {len(bloque_actual['propiedades_por_T'])}")
+        else: print('Error')
 
     except Exception as e:
         print(f"Error en {p_kpa} kPa: {e}")

@@ -32,18 +32,24 @@ P_crit_pa = 11333000.0    # Presión crítica del Amoníaco (~11.33 MPa)
 # --- AJUSTE DE PARÁMETROS DE EXTRACCIÓN ---
 # Definimos presiones de interés en kPa
 presiones_kpa = np.array([
-    50.0, 100.0, 200.0, 400.0, 600.0, 800.0, 
-    1000.0, 1500.0, 2000.0, 3000.0, 5000.0, 8000.0, 10000.0,
-    15000.0, 20000.0, 30000.0, 40000.0, 50000.0
+    7.0, 8.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0,
+    50.0, 100.0, 200.0, 400.0, 600.0, 800.0, 900.0,
+    1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 6000.0,
+    7000.0, 8000.0, 9000.0, 10000.0, 10500.0, 11000,
+    11300, 15000.0, 20000.0, 30000.0, 40000.0, 50000.0,
+    60000.0, 70000.0, 80000.0, 90000.0, 100000.0,
+    500000.0, 100000.0, 1500000.0, 2000000.0, 2100000.0,
+    2200000.0, 2300000.0, 2400000.0, 2500000.0,
+    3000000.0, 4000000.0, 5000000.0, 6000000.0, 7000000.0,
+    8000000.0, 9000000.0, 10000000.0
 ], dtype=np.float64)
 
 # Rango maestro de temperaturas fijas en °C para evaluar la cuadrícula (Grid)
-# El límite superior se extiende para cubrir el comportamiento de gas ideal sobrecalentado
-T_min_maestro = -50.0
-T_max_maestro = 250.0
-paso_T_sh = 5.0
+T_min = -75.0
+T_max = 420.0
+paso_T = 5.0
 
-temperaturas_fijas_c = np.arange(T_min_maestro, T_max_maestro + paso_T_sh, paso_T_sh)
+temperaturas_fijas_c = np.arange(T_min, T_max + paso_T, paso_T)
 # =====================================================================
 
 bloques_sobrecalentado = []
@@ -59,13 +65,15 @@ for p_kpa in presiones_kpa:
             t_sat_k = float(CP.PropsSI("T", "P", p_pa, "Q", 1, fluido))
             t_sat_c = float(np.round(t_sat_k - 273.15, 2))
             is_supercritical = False
+            low_pressure = True if p_kpa < 40 else False
         except:
-            t_sat_c = -273.15  # No hay Tsat definido para presiones supercríticas
+            t_sat_c = -70  # No hay Tsat definido para presiones supercríticas
+            low_pressure = True if p_kpa < 40 else False
             is_supercritical = True
-
+            
         bloque_actual = {
             "P": float(p_kpa),
-            "T_sat": float(t_sat_c),
+            "T_sat": t_sat_c if not is_supercritical else "N/A",
             "propiedades_por_T": []
         }
 
@@ -85,15 +93,22 @@ for p_kpa in presiones_kpa:
             })
 
         # --- FILAS SIGUIENTES: Temperaturas del rango ---
-        temperaturas_validas = temperaturas_fijas_c[
-            (temperaturas_fijas_c > t_sat_c + 0.01)
-        ]
+        if is_supercritical:
+            temperaturas_validas = temperaturas_fijas_c[
+                temperaturas_fijas_c > T_crit_c
+            ]
+        else:
+            temperaturas_validas = temperaturas_fijas_c[
+                (temperaturas_fijas_c > t_sat_c + 0.01)
+            ]
+        if low_pressure:
+            temperaturas_validas = temperaturas_fijas_c[
+                temperaturas_fijas_c > -75
+            ]
         for t_c in temperaturas_validas:
             t_k = float(t_c + 273.15)
 
             try:
-                # CORRECCIÓN: Usar Densidad (D) para calcular volumen específico (1/D)
-                # CP.PropsSI("V", ...) devuelve viscosidad dinámica, NO volumen específico.
                 v = 1.0 / float(CP.PropsSI("D", "P", p_pa, "T", t_k, fluido))
                 u = float(CP.PropsSI("U", "P", p_pa, "T", t_k, fluido) / 1000.0)
                 h = float(CP.PropsSI("H", "P", p_pa, "T", t_k, fluido) / 1000.0)
