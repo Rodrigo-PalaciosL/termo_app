@@ -18,7 +18,7 @@ class ManualScreen extends StatelessWidget {
         children: [
           // Encabezado
           Text(
-            'Guía de Operación: TermoApp NH₃',
+            'Guía de Operación: TermoEngine NH₃',
             style: textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: colorScheme.primary,
@@ -33,7 +33,7 @@ class ManualScreen extends StatelessWidget {
           // 1. Introducción
           _buildSectionTitle(context, '1. Introducción'),
           const Text(
-            'TermoApp es una herramienta interactiva diseñada para calcular propiedades termodinámicas de estado para el Amoníaco (NH₃). Utiliza datos interpolados de alta precisión para identificar la fase (Líquido Comprimido, Mezcla o Vapor Sobrecalentado) y graficar el estado en tiempo real.',
+            'TermoEngine es una herramienta interactiva diseñada para calcular propiedades termodinámicas de estado para el Amoníaco (NH₃). Utiliza datos interpolados de alta precisión para identificar la fase (Líquido Comprimido, Mezcla o Vapor Sobrecalentado) y graficar el estado en tiempo real.',
           ),
           const SizedBox(height: 20),
 
