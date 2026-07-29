@@ -1,8 +1,6 @@
 # TermoEngine - Asistente Termodinámico para Amoniaco
 
-<p align="center">
   <img src="assets/logo_cf.png" alt="TermoEngine Logo" width="200"/>
-</p>
 
 TermoEngine es una aplicación desarrollada en Flutter diseñada para facilitar el cálculo de propiedades termodinámicas del amoniaco ($NH_3$). Utiliza bases de datos integradas en formato JSON para realizar interpolaciones precisas y determinar el estado termodinámico de una sustancia a partir de diversas combinaciones de entrada.
 
@@ -68,4 +66,4 @@ La aplicación integra `fl_chart` para renderizar la campana de saturación y po
 
 ---
 
-Desarrollado con ❤️ para la comunidad de ingeniería.
+Desarrollado para la facilidad del cálculo de propiedades termodinámicas.
