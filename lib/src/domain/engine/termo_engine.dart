@@ -260,6 +260,26 @@ class TermoEngine {
   }
 
   EstadoTermodinamico _resolverSobrecalentadoTyV(double tUser, double vUser) {
+    // --- SOPORTE PARA BAJA PRESIÓN (Extrapolación Gas Ideal) ---
+    // Si el volumen es mayor al del bloque de menor presión, extrapolamos usando P*v ≈ cte.
+    if (db.tablaSobrecalentado.isNotEmpty) {
+      final bMin = db.tablaSobrecalentado.first;
+      try {
+        final propMin = _obtenerPropiedadesEnBloquePorT(bMin, tUser);
+        if (vUser > propMin.v + _epsilon) {
+          return EstadoTermodinamico(
+            fase: "Vapor Sobrecalentado",
+            p: bMin.p * (propMin.v / vUser),
+            t: tUser,
+            v: vUser,
+            u: propMin.u,
+            h: propMin.h,
+            s: propMin.s,
+          );
+        }
+      } catch (_) {}
+    }
+
     for (int i = 0; i < db.tablaSobrecalentado.length - 1; i++) {
       try {
         var bloqueA = db.tablaSobrecalentado[i];
@@ -298,6 +318,21 @@ class TermoEngine {
   }
 
   EstadoTermodinamico _resolverSobrecalentadoPv(double pUser, double vUser) {
+    // --- SOPORTE PARA BAJA PRESIÓN <40---
+    if (db.tablaSobrecalentado.isNotEmpty && pUser < db.tablaSobrecalentado.first.p) {
+      final bMin = db.tablaSobrecalentado.first;
+      final prop = _obtenerPropiedadesEnBloquePorV(bMin, vUser * (pUser / bMin.p));
+      return EstadoTermodinamico(
+        fase: "Vapor Sobrecalentado",
+        p: pUser,
+        t: prop.t,
+        v: vUser,
+        u: prop.u,
+        h: prop.h,
+        s: prop.s,
+      );
+    }
+
     BloquePresionSobrecalentado? b1, b2;
     for (int i = 0; i < db.tablaSobrecalentado.length - 1; i++) {
       if (_sonIguales(db.tablaSobrecalentado[i].p, pUser, epsilon: _epsilon)) { b1 = b2 = db.tablaSobrecalentado[i]; break; }
