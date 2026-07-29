@@ -318,7 +318,7 @@ class TermoEngine {
   }
 
   EstadoTermodinamico _resolverSobrecalentadoPv(double pUser, double vUser) {
-    // --- SOPORTE PARA BAJA PRESIÓN ---
+    // --- SOPORTE PARA BAJA PRESIÓN <40---
     if (db.tablaSobrecalentado.isNotEmpty && pUser < db.tablaSobrecalentado.first.p) {
       final bMin = db.tablaSobrecalentado.first;
       final prop = _obtenerPropiedadesEnBloquePorV(bMin, vUser * (pUser / bMin.p));
