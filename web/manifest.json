@@ -1,6 +1,6 @@
 {
-    "name": "termo_app",
-    "short_name": "termo_app",
+    "name": "TermoEngine",
+    "short_name": "TermoEngine",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

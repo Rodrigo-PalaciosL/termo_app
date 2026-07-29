@@ -11,17 +11,17 @@ import 'src/presentation/widgets/pv_diagram.dart';
 import 'src/presentation/manual/manual_screen.dart';
 
 void main() {
-  runApp(const TermoApp());
+  runApp(const TermoEngineApp());
 }
 
-class TermoApp extends StatefulWidget {
-  const TermoApp({super.key});
+class TermoEngineApp extends StatefulWidget {
+  const TermoEngineApp({super.key});
 
   @override
-  State<TermoApp> createState() => _TermoAppState();
+  State<TermoEngineApp> createState() => _TermoEngineAppState();
 }
 
-class _TermoAppState extends State<TermoApp> {
+class _TermoEngineAppState extends State<TermoEngineApp> {
   ThemeMode _themeMode = ThemeMode.light;
   Color _seedColor = Colors.blue;
 
@@ -35,7 +35,7 @@ class _TermoAppState extends State<TermoApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Termo App',
+      title: 'TermoEngine',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: _seedColor, brightness: Brightness.light),
@@ -246,7 +246,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           appBar: AppBar(
             title: Row(
               children: [
-                const Text('TermoApp - Motor Térmico'),
+                const Text('TermoEngine - Motor Térmico'),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -619,7 +619,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                   const ListTile(
                     leading: Icon(Icons.info_outline),
                     title: Text('Versión 1.0.0'),
-                    subtitle: Text('TermoApp Engine v2'),
+                    subtitle: Text('TermoEngine_v2'),
                   ),
                 ],
               ),
