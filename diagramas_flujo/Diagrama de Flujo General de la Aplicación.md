@@ -19,12 +19,12 @@
                     =================================================
                           ¿Qué combinación de entradas se eligió?
                     =================================================
-                         /                  │                  \
-                        /                   │                   \
-    [ Opción 1: Presión & Temp ]  [ Opción 2: Temp & Vol ]  [ Opción 3: Presión & Vol ]
-                        │                   │                   │
-                        ▼                   ▼                   ▼
-                (Ir a Módulo A)     (Ir a Módulo B)     (Ir a Módulo C)
+                    /         /          │          \          \
+                   /         /           │           \          \
+             [ P & T ]   [ T & v ]   [ P & v ]   [ T & x ]   [ P & x ]
+                │           │           │           │           │
+                ▼           ▼           ▼           ▼           ▼
+             (Mod A)     (Mod B)     (Mod C)     (Mod D)     (Mod E)
 
 
 
@@ -33,8 +33,9 @@
                                  (Viene de Opción 1)
                                          │
                                          ▼
-              [ Buscar P_user en la matriz JSON de tabla_saturacion ]
-              - Si no es exacta, interpola linealmente para hallar T_sat
+                 [ ¿Presión es Supercrítica? (P > P_crit) ]
+                 ├── SÍ ──► [ Resolver como Líquido o Vapor ]
+                 └── NO ──► [ Hallar T_sat a P_user ]
                                          │
                                          ▼
                                ¿T_user vs T_sat?
@@ -44,9 +45,9 @@
                  │                       │                       │
                  ▼                       ▼                       ▼
       [ LÍQUIDO COMPRIMIDO ]      ⚠️ [ INDETERMINADO ]      [ VAPOR SOBRECALENTADO ]
-     - Alerta: Fuera de rango     - Detener proceso       - Ir a tabla_sobrecalentado
-       actual de tablas           - Alerta: Requiere      - Ejecutar INTERPOLACIÓN DOBLE
-                                    v o calidad (x)         para calcular: v, u, h
+     - Intentar interpolar en     - Detener proceso       - Ir a tabla_sobrecalentado
+       tabla_liquido              - Alerta: Requiere      - Ejecutar INTERPOLACIÓN DOBLE
+     - Fallback: Usar vf a T        v o calidad (x)         para calcular: v, u, h, s
                  │                       │                       │
                  └───────────────────────┼───────────────────────┘
                                          │
@@ -61,7 +62,7 @@
                                          │
                                          ▼
                [ Buscar T_user en matriz JSON de tabla_saturacion ]
-               - Si no es exacta, interpola linealmente para hallar v_f y v_g
+               - Si no es exacta, interpola para hallar v_f y v_g
                                          │
                                          ▼
                               ¿v_user vs (v_f y v_g)?
@@ -71,11 +72,9 @@
                  │                       │                       │
                  ▼                       ▼                       ▼
       [ LÍQUIDO COMPRIMIDO ]          [ MEZCLA HÚMEDA ]     [ VAPOR SOBRECALENTADO ]
-     - Alerta: Fuera de rango     - Presión final = P_sat  - Ir a tabla_sobrecalentado
-       actual de tablas           - Calcular Calidad:      - Buscar bloques de Presión
-                                    x = (v-vf)/(vg-vf)       que encierren v_user a T_user
-                                  - Calcular h y u usando  - Ejecutar INTERPOLACIÓN DOBLE
-                                    la calidad x            para calcular: P, u, h
+     - Intentar interpolar en     - Presión final = P_sat  - Ir a tabla_sobrecalentado
+       tabla_liquido              - Calcular Calidad:      - Ejecutar INTERPOLACIÓN DOBLE
+     - Fallback: Usar vf a T        x = (v-vf)/(vg-vf)       (Usar _interpolarGas para P)
                  │                       │                       │
                  └───────────────────────┼───────────────────────┘
                                          │
@@ -90,7 +89,7 @@
                                          │
                                          ▼
                [ Buscar P_user en matriz JSON de tabla_saturacion ]
-               - Si no es exacta, interpola linealmente para hallar T_sat, v_f y v_g
+               - Si no es exacta, interpola para hallar T_sat, v_f y v_g
                                          │
                                          ▼
                               ¿v_user vs (v_f y v_g)?
@@ -100,13 +99,26 @@
                  │                       │                       │
                  ▼                       ▼                       ▼
       [ LÍQUIDO COMPRIMIDO ]          [ MEZCLA HÚMEDA ]     [ VAPOR SOBRECALENTADO ]
-     - Alerta: Fuera de rango     - Temp final = T_sat     - Ir a tabla_sobrecalentado
-       actual de tablas           - Calcular Calidad:      - Localizar bloques P1 y P2
-                                    x = (v-vf)/(vg-vf)       vecinos a P_user
-                                  - Calcular h y u usando  - Ejecutar INTERPOLACIÓN DOBLE
-                                    la calidad x            para calcular: T, u, h
+     - Intentar interpolar en     - Temp final = T_sat     - Ir a tabla_sobrecalentado
+       tabla_liquido              - Calcular Calidad:      - Ejecutar INTERPOLACIÓN DOBLE
+     - Fallback: Usar vf a P        x = (v-vf)/(vg-vf)       (Usar _interpolarGas para v)
                  │                       │                       │
                  └───────────────────────┼───────────────────────┘
+                                         │
+                                         ▼
+                              (Ir a Módulo de Salida)
+
+## Módulo D y E: Lógica para Saturación (x)
+
+                            (Viene de Opción 4 o 5)
+                                         │
+                                         ▼
+               [ Buscar T_user o P_user en tabla_saturacion ]
+                                         │
+                                         ▼
+                              [ MEZCLA HÚMEDA ]
+               - Calcular v, u, h, s usando la calidad x:
+                 Prop = Prop_f + x * (Prop_g - Prop_f)
                                          │
                                          ▼
                               (Ir a Módulo de Salida)
@@ -117,18 +129,18 @@
                                              │
                                              ▼
                         [ ENVIAR RESULTADOS NUMÉRICOS A LA INTERFAZ ]
-                        - Muestra en pantalla: T, P, v, u, h y Estado Físico
+                        - Muestra en pantalla: T, P, v, u, h, s, x y Fase
                                              │
                                              ▼
-                        [ PROCESAR COORDENADAS PARA EL CANVAS (GRAFICO) ]
-                        - Variable Eje X = v_final (Volumen específico)
-                        - Variable Eje Y = T_final (Temperatura)
+                        [ PROCESAR COORDENADAS PARA LOS CANVAS ]
+                        - Diagrama T-v: Eje X=v, Eje Y=T
+                        - Diagrama P-v: Eje X=v, Eje Y=P
                                              │
                                              ▼
                         [ DIBUJAR COMPONENTES VISUALES EN PANTALLA ]
-                        1. Dibuja la curva fija de la Campana usando (v_f, T) y (v_g, T)
-                        2. Si es Mezcla, dibuja la línea horizontal de T constante
-                        3. Posiciona el Marcador (Punto de Estado) en la coordenada (v, T)
+                        1. Dibuja la curva de la Campana de Saturación
+                        2. Dibuja líneas de presión/temperatura constante (Isotermas/Isobaras)
+                        3. Posiciona el Marcador (Punto de Estado)
                                              │
                                              ▼
                                      [ FIN DEL PROCESO ]
